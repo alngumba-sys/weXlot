@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { AdminPanel } from './AdminPanel';
 import { getAllImages } from '../../lib/supabase';
+
+// Lazy load AdminPanel - only loads when needed (saves ~50KB on initial load)
+const AdminPanel = lazy(() => import('./AdminPanel').then(module => ({ default: module.AdminPanel })));
 
 export default function AppWithAdmin() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -42,9 +44,14 @@ export default function AppWithAdmin() {
     return defaultImages;
   });
 
-  // Load images from Supabase on mount
+  // Load images from Supabase on mount - deferred slightly for faster initial render
   useEffect(() => {
-    loadImages();
+    // Use requestIdleCallback if available, otherwise setTimeout
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => loadImages());
+    } else {
+      setTimeout(() => loadImages(), 1);
+    }
   }, []);
 
   const loadImages = async () => {
@@ -157,12 +164,16 @@ export default function AppWithAdmin() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Admin Panel */}
-      <AdminPanel 
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-        onImagesUpdated={handleImagesUpdated}
-      />
+      {/* Admin Panel - Lazy loaded */}
+      {isAdminOpen && (
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"><div className="text-white">Loading...</div></div>}>
+          <AdminPanel 
+            isOpen={isAdminOpen}
+            onClose={() => setIsAdminOpen(false)}
+            onImagesUpdated={handleImagesUpdated}
+          />
+        </Suspense>
+      )}
 
       {/* Header */}
       <header className="flex justify-between items-center gap-4 px-4 sm:px-8 md:px-16 lg:px-24 py-3 relative">
@@ -440,6 +451,7 @@ export default function AppWithAdmin() {
             src={images.logo}
             alt="WeXlot Logo"
             className="w-[50px] sm:w-[60px] md:w-[67px] h-auto"
+            loading="eager"
           />
         </button>
       </div>
@@ -453,6 +465,16 @@ export default function AppWithAdmin() {
           we build <span className="text-[#FF4F00]">platforms that actually<br />
           help businesses grow.</span>
         </h1>
+
+        {/* Workspace Image - Shows on mobile only (below text) */}
+        <div className="w-full max-w-2xl mb-8 lg:hidden">
+          <ImageWithFallback 
+            key={images.workspaceImage}
+            src={images.workspaceImage}
+            alt="Business platform dashboard"
+            className="w-full h-auto object-contain rounded-lg opacity-55"
+          />
+        </div>
 
         {/* Content Section with Logo and Image */}
         <div className="max-w-6xl w-full flex flex-col lg:flex-row gap-8 lg:gap-12 items-start relative">
@@ -515,7 +537,7 @@ export default function AppWithAdmin() {
             </a>
           </div>
 
-          {/* Center - Workspace Image (Hidden on mobile) */}
+          {/* Center - Workspace Image (Desktop only - positioned in center) */}
           <div className="hidden lg:block flex-1 relative min-h-[400px]">
             <ImageWithFallback 
               key={images.workspaceImage}

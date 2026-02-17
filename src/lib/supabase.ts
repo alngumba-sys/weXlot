@@ -87,11 +87,38 @@ export async function getImageUrl(imageKey: ImageKey): Promise<string | null> {
 }
 
 export async function getAllImages(): Promise<Record<ImageKey, string | null>> {
-  const images: Record<string, string | null> = {};
-  
-  for (const key of Object.keys(IMAGE_KEYS) as ImageKey[]) {
-    images[key] = await getImageUrl(key);
+  try {
+    // Fetch all files at once instead of making individual requests
+    const { data: allFiles, error } = await supabase.storage
+      .from('images')
+      .list('platform-images');
+
+    if (error) {
+      console.error('Error listing all files:', error);
+      return Object.keys(IMAGE_KEYS).reduce((acc, key) => ({ ...acc, [key]: null }), {} as Record<ImageKey, string | null>);
+    }
+
+    // Map files to image keys
+    const images: Record<string, string | null> = {};
+    const timestamp = Date.now();
+
+    for (const [key, fileName] of Object.entries(IMAGE_KEYS)) {
+      const file = allFiles?.find(f => f.name.startsWith(fileName));
+      
+      if (file) {
+        const { data: urlData } = supabase.storage
+          .from('images')
+          .getPublicUrl(`platform-images/${file.name}`);
+        
+        images[key] = `${urlData.publicUrl}?t=${timestamp}`;
+      } else {
+        images[key] = null;
+      }
+    }
+
+    return images as Record<ImageKey, string | null>;
+  } catch (error) {
+    console.error('Error getting all images:', error);
+    return Object.keys(IMAGE_KEYS).reduce((acc, key) => ({ ...acc, [key]: null }), {} as Record<ImageKey, string | null>);
   }
-  
-  return images as Record<ImageKey, string | null>;
 }
