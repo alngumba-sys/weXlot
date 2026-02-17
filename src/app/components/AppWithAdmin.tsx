@@ -26,8 +26,21 @@ export default function AppWithAdmin() {
     philosophyImage: "https://images.unsplash.com/photo-1609619385076-36a873425636?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjcmVhdGl2ZSUyMHRoaW5raW5nJTIwaW5ub3ZhdGlvbiUyMGxpZ2h0YnVsYnxlbnwxfHx8fDE3NzEzMjE4MTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
   };
 
-  // State for images
-  const [images, setImages] = useState(defaultImages);
+  // State for images - Initialize with cached images if available
+  const [images, setImages] = useState(() => {
+    // Try to load cached images from localStorage first
+    const cached = localStorage.getItem('wexlot-images');
+    if (cached) {
+      try {
+        const parsedCache = JSON.parse(cached);
+        console.log('[CACHE] Loading images from localStorage:', parsedCache);
+        return parsedCache;
+      } catch (e) {
+        console.error('[CACHE] Failed to parse cached images:', e);
+      }
+    }
+    return defaultImages;
+  });
 
   // Load images from Supabase on mount
   useEffect(() => {
@@ -50,6 +63,15 @@ export default function AppWithAdmin() {
     };
     
     console.log('[' + new Date().toLocaleTimeString() + '] Setting images state to:', newImages);
+    
+    // Save to localStorage for instant loading on next visit
+    try {
+      localStorage.setItem('wexlot-images', JSON.stringify(newImages));
+      console.log('[CACHE] Saved images to localStorage');
+    } catch (e) {
+      console.error('[CACHE] Failed to save images to localStorage:', e);
+    }
+    
     setImages(newImages);
   };
 
