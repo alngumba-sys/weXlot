@@ -35,10 +35,11 @@ export default function AppWithAdmin() {
   }, []);
 
   const loadImages = async () => {
-    console.log('Loading images from Supabase...');
+    console.log('[' + new Date().toLocaleTimeString() + '] Loading images from Supabase...');
     const supabaseImages = await getAllImages();
-    console.log('Loaded images:', supabaseImages);
-    setImages({
+    console.log('[' + new Date().toLocaleTimeString() + '] Loaded images from Supabase:', supabaseImages);
+    
+    const newImages = {
       workspaceImage: supabaseImages.workspaceImage || defaultImages.workspaceImage,
       logo: supabaseImages.logo || defaultImages.logo,
       scissorUpLogo: supabaseImages.scissorUpLogo || defaultImages.scissorUpLogo,
@@ -46,7 +47,10 @@ export default function AppWithAdmin() {
       smartLenderUpLogo: supabaseImages.smartLenderUpLogo || defaultImages.smartLenderUpLogo,
       tillsUpLogo: supabaseImages.tillsUpLogo || defaultImages.tillsUpLogo,
       philosophyImage: supabaseImages.philosophyImage || defaultImages.philosophyImage,
-    });
+    };
+    
+    console.log('[' + new Date().toLocaleTimeString() + '] Setting images state to:', newImages);
+    setImages(newImages);
   };
 
   const handleLogoClick = () => {
@@ -410,6 +414,7 @@ export default function AppWithAdmin() {
           aria-label="WeXlot Logo"
         >
           <ImageWithFallback 
+            key={images.logo}
             src={images.logo}
             alt="WeXlot Logo"
             className="w-[50px] sm:w-[60px] md:w-[67px] h-auto"
@@ -439,6 +444,7 @@ export default function AppWithAdmin() {
             >
               <div className="w-full max-w-[199px] h-[79px] overflow-hidden">
                 <ImageWithFallback 
+                  key={images.scissorUpLogo}
                   src={images.scissorUpLogo}
                   alt="ScissorUp Logo"
                   className="w-[199px] h-auto object-contain grayscale group-hover:grayscale-0 transition-all"
@@ -466,6 +472,7 @@ export default function AppWithAdmin() {
             >
               <div className="w-full max-w-[199px] h-[79px] overflow-hidden flex items-center">
                 <ImageWithFallback 
+                  key={images.smartLenderUpLogo}
                   src={images.smartLenderUpLogo}
                   alt="SmartLenderUp Logo"
                   className="w-[161px] h-auto object-contain grayscale group-hover:grayscale-0 transition-all"
@@ -489,6 +496,7 @@ export default function AppWithAdmin() {
           {/* Center - Workspace Image (Hidden on mobile) */}
           <div className="hidden lg:block flex-1 relative min-h-[400px]">
             <ImageWithFallback 
+              key={images.workspaceImage}
               src={images.workspaceImage}
               alt="Business platform dashboard"
               className="w-full h-auto object-contain rounded-lg opacity-55 absolute left-1/2 -translate-x-1/2 top-8"
@@ -505,6 +513,7 @@ export default function AppWithAdmin() {
             >
               <div className="w-full max-w-[199px] h-[79px] overflow-hidden">
                 <ImageWithFallback 
+                  key={images.tillsUpLogo}
                   src={images.tillsUpLogo}
                   alt="TillsUp Logo"
                   className="w-[128px] h-auto object-contain grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all mt-[12px]"
@@ -532,6 +541,7 @@ export default function AppWithAdmin() {
             >
               <div className="w-full max-w-[199px] h-[79px] overflow-hidden">
                 <ImageWithFallback 
+                  key={images.pillsUpLogo}
                   src={images.pillsUpLogo}
                   alt="PillsUp Logo"
                   className="w-[161px] h-auto object-contain mt-[33px] grayscale group-hover:grayscale-0 transition-all"
@@ -585,6 +595,7 @@ export default function AppWithAdmin() {
               
               {/* Centered Image */}
               <ImageWithFallback 
+                key={images.philosophyImage}
                 src={images.philosophyImage}
                 alt="Creative thinking and innovation"
                 className="w-full max-w-[250px] sm:max-w-[280px] md:max-w-[320px] h-auto object-contain opacity-50 flex-shrink-0 mx-auto lg:mx-0"
@@ -801,6 +812,7 @@ export default function AppWithAdmin() {
             {/* Company Info */}
             <div>
               <ImageWithFallback 
+                key={images.logo}
                 src={images.logo}
                 alt="WeXlot Logo"
                 className="w-[50px] h-auto mb-4 sm:mb-6"

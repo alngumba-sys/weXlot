@@ -1,7 +1,7 @@
 
-  # Professional Website Landing Page
+  # weXlot
 
-  This is a code bundle for Professional Website Landing Page. The original project is available at https://www.figma.com/design/hXu59KhJVNYc3znm8YJkYQ/Professional-Website-Landing-Page.
+  This is a code bundle for weXlot. The original project is available at https://www.figma.com/design/hXu59KhJVNYc3znm8YJkYQ/weXlot.
 
   ## Running the code
 
