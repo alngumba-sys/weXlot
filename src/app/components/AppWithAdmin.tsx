@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { getAllImages } from '../../lib/supabase';
+import smartLenderUpLogo from 'figma:asset/f0b40ab18f6b5d594a18db04f4234532b02a6636.png';
+import hotelierUpLogo from 'figma:asset/f09323f9851e371e95f80ea12a5911f2553abbda.png';
+import pillsUpLogo from 'figma:asset/aef8f0737b83cf6a48e19905648733cc3bbc1709.png';
+import salesUpLogo from 'figma:asset/f760516546bb7fcafad47cecb5f7dbcf6d39baf8.png';
 
 // Lazy load AdminPanel - only loads when needed (saves ~50KB on initial load)
 const AdminPanel = lazy(() => import('./AdminPanel').then(module => ({ default: module.AdminPanel })));
@@ -19,13 +23,15 @@ export default function AppWithAdmin() {
 
   // Default fallback image URLs
   const defaultImages = {
-    workspaceImage: "https://images.unsplash.com/photo-1630283018262-d0df4afc2fef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB3b3Jrc3BhY2UlMjBidXNpbmVzcyUyMGRlc2t8ZW58MXx8fHwxNzcxMzIxODE3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    workspaceImage: "https://images.unsplash.com/photo-1630283018262-d0df4afc2fef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB3b3Jrc3BhY2UlMjBidXNpbmVzcyUyMGRlc2t8ZW58MXx8fHwxNzcxMzIxODE3fDA&ixlib=rb-4.1.0&q=60&w=1080&auto=format",
     logo: "https://via.placeholder.com/67x67/FF4F00/FFFFFF?text=WeXlot",
     scissorUpLogo: "https://via.placeholder.com/199x79/666666/FFFFFF?text=ScissorUp",
-    pillsUpLogo: "https://via.placeholder.com/161x79/666666/FFFFFF?text=PillsUp",
-    smartLenderUpLogo: "https://via.placeholder.com/161x79/666666/FFFFFF?text=SmartLender",
+    pillsUpLogo: pillsUpLogo,
+    smartLenderUpLogo: smartLenderUpLogo,
+    hotelierUpLogo: hotelierUpLogo,
     tillsUpLogo: "https://via.placeholder.com/128x79/666666/FFFFFF?text=TillsUp",
-    philosophyImage: "https://images.unsplash.com/photo-1609619385076-36a873425636?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjcmVhdGl2ZSUyMHRoaW5raW5nJTIwaW5ub3ZhdGlvbiUyMGxpZ2h0YnVsYnxlbnwxfHx8fDE3NzEzMjE4MTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    salesUpLogo: salesUpLogo,
+    philosophyImage: "https://images.unsplash.com/photo-1609619385076-36a873425636?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjcmVhdGl2ZSUyMHRoaW5raW5nJTIwaW5ub3ZhdGlvbiUyMGxpZ2h0YnVsYnxlbnwxfHx8fDE3NzEzMjE4MTh8MA&ixlib=rb-4.1.0&q=60&w=1080&auto=format",
   };
 
   // State for images - Initialize with cached images if available
@@ -63,9 +69,12 @@ export default function AppWithAdmin() {
       workspaceImage: supabaseImages.workspaceImage || defaultImages.workspaceImage,
       logo: supabaseImages.logo || defaultImages.logo,
       scissorUpLogo: supabaseImages.scissorUpLogo || defaultImages.scissorUpLogo,
-      pillsUpLogo: supabaseImages.pillsUpLogo || defaultImages.pillsUpLogo,
-      smartLenderUpLogo: supabaseImages.smartLenderUpLogo || defaultImages.smartLenderUpLogo,
+      // Force use of local asset for PillsUp and SmartLenderUp
+      pillsUpLogo: defaultImages.pillsUpLogo,
+      smartLenderUpLogo: defaultImages.smartLenderUpLogo,
+      hotelierUpLogo: defaultImages.hotelierUpLogo,
       tillsUpLogo: supabaseImages.tillsUpLogo || defaultImages.tillsUpLogo,
+      salesUpLogo: defaultImages.salesUpLogo,
       philosophyImage: supabaseImages.philosophyImage || defaultImages.philosophyImage,
     };
     
@@ -81,6 +90,61 @@ export default function AppWithAdmin() {
     
     setImages(newImages);
   };
+
+  const [flashingLogo, setFlashingLogo] = useState<string | null>(null);
+  const logoQueueRef = useRef<string[]>([]);
+  const lastLogoRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const allLogos = ['scissorUp', 'smartLenderUp', 'hotelierUp', 'tillsUp', 'pillsUp', 'salesUp'];
+    
+    const fillQueue = () => {
+      let newQueue = [...allLogos];
+      
+      // Fisher-Yates shuffle
+      for (let i = newQueue.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newQueue[i], newQueue[j]] = [newQueue[j], newQueue[i]];
+      }
+
+      // Prevent consecutive repeats across batches
+      // If the first item of the new batch is the same as the last flashed logo
+      if (lastLogoRef.current && newQueue[0] === lastLogoRef.current) {
+        // Swap first element with the last element
+        [newQueue[0], newQueue[newQueue.length - 1]] = [newQueue[newQueue.length - 1], newQueue[0]];
+      }
+      
+      logoQueueRef.current = newQueue;
+    };
+
+    const flashNextLogo = () => {
+      // If queue is empty, refill it
+      if (logoQueueRef.current.length === 0) {
+        fillQueue();
+      }
+      
+      // Get the next logo
+      const selectedLogo = logoQueueRef.current.shift();
+      
+      if (selectedLogo) {
+        lastLogoRef.current = selectedLogo;
+        setFlashingLogo(selectedLogo);
+        
+        // Clear it after 3 seconds (flashing duration)
+        setTimeout(() => {
+          setFlashingLogo(null);
+        }, 3000);
+      }
+    };
+
+    // Initial flash
+    flashNextLogo();
+
+    // Set interval for subsequent flashes - runs every 4 seconds to allow for 3s flash + 1s gap
+    const intervalId = setInterval(flashNextLogo, 4000); 
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleLogoClick = () => {
     setLogoClickCount(prev => prev + 1);
@@ -129,6 +193,18 @@ export default function AppWithAdmin() {
       name: 'Pharmacy Platform',
       logo: images.pillsUpLogo,
       url: 'https://pillsup.com/',
+      logoClass: 'w-[100px]'
+    },
+    {
+      name: 'Sales Platform',
+      logo: images.salesUpLogo,
+      url: '#',
+      logoClass: 'w-[100px]'
+    },
+    {
+      name: 'Hotel Platform',
+      logo: images.hotelierUpLogo,
+      url: '#',
       logoClass: 'w-[100px]'
     }
   ];
@@ -459,7 +535,7 @@ export default function AppWithAdmin() {
       {/* Main Content */}
       <div className="flex flex-col items-center justify-center px-4 sm:px-8 md:px-16 lg:px-24 py-4 md:py-0">
         {/* Text Section */}
-        <h1 className="leading-tight font-bold text-[24px] sm:text-[32px] md:text-[40px] lg:text-[48px] font-[Lexend] text-[#C0C0C0] mt-4 md:mt-[-90px] mb-6 md:mb-[24px] text-center">
+        <h1 className="leading-tight font-bold font-[Lexend] text-[#C0C0C0] text-center text-[28px] sm:text-[34px] md:text-[40px] mx-[0px] mt-[-30px] sm:mt-[-60px] md:mt-[-90px] mb-[15px]">
           hello,<br />
           we are WeXlot,<br />
           we build <span className="text-[#FF4F00]">platforms that actually<br />
@@ -473,29 +549,32 @@ export default function AppWithAdmin() {
             src={images.workspaceImage}
             alt="Business platform dashboard"
             className="w-full h-auto object-contain rounded-lg opacity-55"
+            loading="eager"
+            width={672}
+            height={378}
           />
         </div>
 
         {/* Content Section with Logo and Image */}
-        <div className="max-w-6xl w-full flex flex-col lg:flex-row gap-8 lg:gap-12 items-start relative">
+        <div className="max-w-6xl w-full flex flex-col md:flex-row lg:flex-row gap-8 lg:gap-12 items-start relative">
           {/* Left Side - ScissorUp and SmartLenderUp */}
-          <div className="w-full lg:flex-shrink-0 lg:w-64 space-y-8 lg:space-y-12">
+          <div className="w-full md:flex-1 lg:flex-none lg:w-64 space-y-8 lg:space-y-12">
             <a 
               href="https://scissorup.com/" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="block cursor-pointer group transition-all"
+              className="block cursor-pointer group transition-all mx-[0px] mt-[0px] mb-[12px]"
             >
-              <div className="w-full max-w-[199px] h-[79px] overflow-hidden">
+              <div className="w-full max-w-[199px] h-auto m-[0px]">
                 <ImageWithFallback 
                   key={images.scissorUpLogo}
                   src={images.scissorUpLogo}
                   alt="ScissorUp Logo"
-                  className="w-[199px] h-auto object-contain grayscale group-hover:grayscale-0 transition-all"
+                  className={`w-[199px] h-auto object-contain ${flashingLogo === 'scissorUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
                 />
               </div>
               
-              <h2 className="font-bold text-[#FF4F00] mt-2 mb-2 font-[Mallanna] text-[18px] sm:text-[20px]">
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] m-[0px]">
                 Barbershop & Salons
               </h2>
               
@@ -503,9 +582,7 @@ export default function AppWithAdmin() {
                 Transform your appointment booking and client management with a stylish, easy-to-use interface.
               </p>
               
-              <p className="text-[#666] text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
-                Online booking, Staff scheduling, Client history, SMS reminders
-              </p>
+
             </a>
 
             <a 
@@ -514,16 +591,16 @@ export default function AppWithAdmin() {
               rel="noopener noreferrer"
               className="block cursor-pointer group transition-all"
             >
-              <div className="w-full max-w-[199px] h-[79px] overflow-hidden flex items-center">
+              <div className="w-full max-w-[199px] h-[79px]">
                 <ImageWithFallback 
                   key={images.smartLenderUpLogo}
                   src={images.smartLenderUpLogo}
                   alt="SmartLenderUp Logo"
-                  className="w-[161px] h-auto object-contain grayscale group-hover:grayscale-0 transition-all"
+                  className={`w-[178px] h-auto object-contain mt-[39px] ${flashingLogo === 'smartLenderUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
                 />
               </div>
               
-              <h2 className="font-bold text-[#FF4F00] mt-2 mb-2 font-[Mallanna] text-[18px] sm:text-[20px]">
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] mx-[0px] mt-[-23px] mb-[2px]">
                 Loans Platform
               </h2>
               
@@ -531,8 +608,28 @@ export default function AppWithAdmin() {
                 Simplify the lending lifecycle from application to disbursement with intelligent risk assessment.
               </p>
               
-              <p className="text-[#666] text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
-                Credit scoring, Document management, Payment tracking, Digital signatures
+
+            </a>
+
+            <a 
+              href="#" 
+              className="block cursor-pointer group transition-all"
+            >
+              <div className="w-full max-w-[199px] h-auto">
+                <ImageWithFallback 
+                  key={images.hotelierUpLogo}
+                  src={images.hotelierUpLogo}
+                  alt="HotelierUp Logo"
+                  className={`w-[199px] h-auto object-contain mx-[0px] my-[5px] ${flashingLogo === 'hotelierUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
+                />
+              </div>
+              
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] m-[0px]">
+                Hotel Platform
+              </h2>
+              
+              <p className="text-[#666] mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
+                All-in-one hospitality management platform. Streamline operations, enhance guest experiences, and driving excellence
               </p>
             </a>
           </div>
@@ -543,38 +640,39 @@ export default function AppWithAdmin() {
               key={images.workspaceImage}
               src={images.workspaceImage}
               alt="Business platform dashboard"
-              className="w-full h-auto object-contain rounded-lg opacity-55 absolute left-1/2 -translate-x-1/2 top-8"
+              className="w-[115%] h-auto object-contain rounded-lg opacity-55 absolute left-1/2 -translate-x-1/2 top-8"
+              loading="eager"
+              width={1080}
+              height={600}
             />
           </div>
 
           {/* Right Side - TillsUp and PillsUp */}
-          <div className="w-full lg:flex-shrink-0 lg:w-64 space-y-8 lg:space-y-12">
+          <div className="w-full md:flex-1 lg:flex-none lg:w-64 space-y-8 lg:space-y-12">
             <a 
               href="http://www.tillsup.com/" 
               target="_blank" 
               rel="noopener noreferrer"
               className="block cursor-pointer group transition-all"
             >
-              <div className="w-full max-w-[199px] h-[79px] overflow-hidden">
+              <div className="w-full max-w-[199px] h-auto">
                 <ImageWithFallback 
                   key={images.tillsUpLogo}
                   src={images.tillsUpLogo}
                   alt="TillsUp Logo"
-                  className="w-[128px] h-auto object-contain grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all mt-[12px]"
+                  className={`w-[128px] h-auto object-contain mt-[12px] ${flashingLogo === 'tillsUp' ? 'grayscale-0 opacity-100 scale-[1.15]' : 'grayscale opacity-70 scale-100'} group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-500`}
                 />
               </div>
               
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] mt-2 mb-2">
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] m-[0px]">
                 POS Platform
               </h2>
               
-              <p className="text-[#999] group-hover:text-[#666] mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight transition-colors">
+              <p className="text-[#999] group-hover:text-[#666] mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight transition-colors text-[#666666]">
                 Fast, reliable, and integrated point-of-sale system for modern retail and hospitality businesses.
               </p>
               
-              <p className="text-[#999] group-hover:text-[#666] text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight transition-colors">
-                Offline mode, Multi-store support, Inventory sync, Loyalty programs
-              </p>
+
             </a>
 
             <a 
@@ -583,25 +681,43 @@ export default function AppWithAdmin() {
               rel="noopener noreferrer"
               className="block cursor-pointer group transition-all"
             >
-              <div className="w-full max-w-[199px] h-[79px] overflow-hidden">
+              <div className="w-full max-w-[199px] h-auto mt-[-20px]">
                 <ImageWithFallback 
                   key={images.pillsUpLogo}
                   src={images.pillsUpLogo}
                   alt="PillsUp Logo"
-                  className="w-[161px] h-auto object-contain mt-[33px] grayscale group-hover:grayscale-0 transition-all"
+                  className={`w-[161px] h-auto object-contain mt-[0px] m-[0px] ${flashingLogo === 'pillsUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
                 />
               </div>
               
-              <h2 className="font-bold text-[#FF4F00] mt-2 mb-2 font-[Mallanna] text-[18px] sm:text-[20px]">
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] m-[0px]">
                 Pharmacy Platform
               </h2>
               
               <p className="text-[#666] mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
                 Manage inventory, prescriptions, and patient records with a secure and compliant digital ecosystem.
               </p>
+            </a>
+
+            <a 
+              href="#" 
+              className="block cursor-pointer group transition-all mt-[-20px]"
+            >
+              <div className="w-full max-w-[199px] h-auto">
+                <ImageWithFallback 
+                  key={images.salesUpLogo}
+                  src={images.salesUpLogo}
+                  alt="MintUp Logo"
+                  className={`w-[115px] h-auto object-contain mt-[10px] m-[0px] ${flashingLogo === 'salesUp' ? 'grayscale-0 opacity-100 scale-[1.15]' : 'grayscale opacity-70 scale-100'} group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-500`}
+                />
+              </div>
               
-              <p className="text-[#666] text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
-                Stock alerts, E-prescription sync, HIPAA compliant, Supplier portal
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] m-[0px]">
+                Sales Platform
+              </h2>
+              
+              <p className="text-[#666] mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
+                Enterprise ERP platform optimizing Field Operations, Sales, and Warehouse management.
               </p>
             </a>
           </div>
@@ -643,6 +759,9 @@ export default function AppWithAdmin() {
                 src={images.philosophyImage}
                 alt="Creative thinking and innovation"
                 className="w-full max-w-[250px] sm:max-w-[280px] md:max-w-[320px] h-auto object-contain opacity-50 flex-shrink-0 mx-auto lg:mx-0"
+                loading="lazy"
+                width={320}
+                height={213}
               />
               
               {/* Approach */}

@@ -76,7 +76,8 @@ export async function getImageUrl(imageKey: ImageKey): Promise<string | null> {
       .getPublicUrl(`platform-images/${file.name}`);
 
     // Add cache buster to always get fresh image
-    const urlWithCacheBuster = `${urlData.publicUrl}?t=${Date.now()}`;
+    // const urlWithCacheBuster = `${urlData.publicUrl}?t=${Date.now()}`;
+    const urlWithCacheBuster = urlData.publicUrl;
     console.log('Image URL for', imageKey, ':', urlWithCacheBuster);
     
     return urlWithCacheBuster;
@@ -110,7 +111,7 @@ export async function getAllImages(): Promise<Record<ImageKey, string | null>> {
           .from('images')
           .getPublicUrl(`platform-images/${file.name}`);
         
-        images[key] = `${urlData.publicUrl}?t=${timestamp}`;
+        images[key] = urlData.publicUrl;
       } else {
         images[key] = null;
       }
