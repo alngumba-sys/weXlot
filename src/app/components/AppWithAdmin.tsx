@@ -19,12 +19,12 @@ import {
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { getAllImages } from '../../lib/supabase';
-import smartLenderUpLogo from 'figma:asset/f0b40ab18f6b5d594a18db04f4234532b02a6636.png';
-import hotelierUpLogo from 'figma:asset/f09323f9851e371e95f80ea12a5911f2553abbda.png';
-import pillsUpLogo from 'figma:asset/aef8f0737b83cf6a48e19905648733cc3bbc1709.png';
-import salesUpLogo from 'figma:asset/f760516546bb7fcafad47cecb5f7dbcf6d39baf8.png';
-import wexlotLogoNew from 'figma:asset/ea1963818df3746af7e4f5b2642bed15dd2bd3d1.png';
-import wexlotLogoWhite from 'figma:asset/c89476e62c0a4103ba3e16e6e862bf9c83b42d97.png';
+const smartLenderUpLogo = "https://placehold.co/200x80?text=SmartLenderUp";
+const hotelierUpLogo = "https://placehold.co/200x80?text=HotelierUp";
+const pillsUpLogo = "https://placehold.co/200x80?text=PillsUp";
+const salesUpLogo = "https://placehold.co/200x80?text=SalesUp";
+const wexlotLogoNew = "https://placehold.co/150x50?text=WeXlot";
+const wexlotLogoWhite = "https://placehold.co/150x50/023E8A/FFFFFF?text=WeXlot";
 
 // Lazy load AdminPanel - only loads when needed (saves ~50KB on initial load)
 const AdminPanel = lazy(() => import('./AdminPanel').then(module => ({ default: module.AdminPanel })));
