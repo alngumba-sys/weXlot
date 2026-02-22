@@ -6,7 +6,7 @@ import {
   BedDouble, 
   Store, 
   Pill, 
-  Briefcase,
+  Briefcase, 
   CalendarCheck,
   Users,
   CreditCard,
@@ -19,12 +19,13 @@ import {
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { getAllImages } from '../../lib/supabase';
-const smartLenderUpLogo = "https://placehold.co/200x80?text=SmartLenderUp";
-const hotelierUpLogo = "https://placehold.co/200x80?text=HotelierUp";
-const pillsUpLogo = "https://placehold.co/200x80?text=PillsUp";
-const salesUpLogo = "https://placehold.co/200x80?text=SalesUp";
-const wexlotLogoNew = "https://placehold.co/150x50?text=WeXlot";
-const wexlotLogoWhite = "https://placehold.co/150x50/023E8A/FFFFFF?text=WeXlot";
+
+const smartLenderUpLogo = "data:image/svg+xml,%3Csvg width='200' height='80' viewBox='0 0 200 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 40 L40 25 L60 40 V55 H20 V40 Z' stroke='%23FF4F00' stroke-width='3' fill='none' stroke-linejoin='round'/%3E%3Ctext x='70' y='48' font-family='sans-serif' font-size='20' font-weight='bold' fill='%23333'%3ESmartLender%3Ctspan fill='%23FF4F00'%3EUp%3C/tspan%3E%3C/text%3E%3C/svg%3E";
+const hotelierUpLogo = "data:image/svg+xml,%3Csvg width='200' height='80' viewBox='0 0 200 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 30 V50 M60 30 V50 M20 40 H60 M20 30 H60 M25 30 V25 H35 V30 M45 30 V25 H55 V30' stroke='%23FF4F00' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ctext x='70' y='48' font-family='sans-serif' font-size='22' font-weight='bold' fill='%23333'%3EHotelier%3Ctspan fill='%23FF4F00'%3EUp%3C/tspan%3E%3C/text%3E%3C/svg%3E";
+const pillsUpLogo = "data:image/svg+xml,%3Csvg width='200' height='80' viewBox='0 0 200 80' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='25' y='30' width='30' height='20' rx='10' stroke='%23FF4F00' stroke-width='3' fill='none'/%3E%3Cpath d='M40 30 V50' stroke='%23FF4F00' stroke-width='3'/%3E%3Ctext x='70' y='48' font-family='sans-serif' font-size='24' font-weight='bold' fill='%23333'%3EPills%3Ctspan fill='%23FF4F00'%3EUp%3C/tspan%3E%3C/text%3E%3C/svg%3E";
+const salesUpLogo = "data:image/svg+xml,%3Csvg width='200' height='80' viewBox='0 0 200 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 50 L30 40 L40 45 L55 25' stroke='%23FF4F00' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M50 25 H55 V30' stroke='%23FF4F00' stroke-width='3' stroke-linecap='round'/%3E%3Ctext x='70' y='48' font-family='sans-serif' font-size='24' font-weight='bold' fill='%23333'%3ESales%3Ctspan fill='%23FF4F00'%3EUp%3C/tspan%3E%3C/text%3E%3C/svg%3E";
+const wexlotLogoNew = "data:image/svg+xml,%3Csvg width='150' height='50' viewBox='0 0 150 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 15 L35 40 L50 15 M50 15 L65 40 L80 15' stroke='%23023E8A' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Ccircle cx='95' cy='15' r='5' fill='%23FF4F00'/%3E%3Ctext x='105' y='38' font-family='sans-serif' font-size='24' font-weight='bold' fill='%23023E8A'%3EXlot%3C/text%3E%3C/svg%3E";
+const wexlotLogoWhite = "data:image/svg+xml,%3Csvg width='150' height='50' viewBox='0 0 150 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 15 L35 40 L50 15 M50 15 L65 40 L80 15' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Ccircle cx='95' cy='15' r='5' fill='%23FF4F00'/%3E%3Ctext x='105' y='38' font-family='sans-serif' font-size='24' font-weight='bold' fill='white'%3EXlot%3C/text%3E%3C/svg%3E";
 
 // Lazy load AdminPanel - only loads when needed (saves ~50KB on initial load)
 const AdminPanel = lazy(() => import('./AdminPanel').then(module => ({ default: module.AdminPanel })));
@@ -109,16 +110,16 @@ export default function AppWithAdmin() {
     
     const newImages = {
       workspaceImage: supabaseImages.workspaceImage || defaultImages.workspaceImage,
-      // Force use of local asset for logo as requested
-      logo: defaultImages.logo,
+      // Try to load from Supabase first, fall back to default
+      logo: supabaseImages.logo || defaultImages.logo,
       footerLogo: defaultImages.footerLogo,
       scissorUpLogo: supabaseImages.scissorUpLogo || defaultImages.scissorUpLogo,
-      // Force use of local asset for PillsUp and SmartLenderUp
-      pillsUpLogo: defaultImages.pillsUpLogo,
-      smartLenderUpLogo: defaultImages.smartLenderUpLogo,
-      hotelierUpLogo: defaultImages.hotelierUpLogo,
+      // Try to load from Supabase first, fall back to default
+      pillsUpLogo: supabaseImages.pillsUpLogo || defaultImages.pillsUpLogo,
+      smartLenderUpLogo: supabaseImages.smartLenderUpLogo || defaultImages.smartLenderUpLogo,
+      hotelierUpLogo: supabaseImages.hotelierUpLogo || defaultImages.hotelierUpLogo,
       tillsUpLogo: supabaseImages.tillsUpLogo || defaultImages.tillsUpLogo,
-      salesUpLogo: defaultImages.salesUpLogo,
+      salesUpLogo: supabaseImages.salesUpLogo || defaultImages.salesUpLogo,
       philosophyImage: supabaseImages.philosophyImage || defaultImages.philosophyImage,
     };
     
@@ -291,6 +292,7 @@ export default function AppWithAdmin() {
             isOpen={isAdminOpen}
             onClose={() => setIsAdminOpen(false)}
             onImagesUpdated={handleImagesUpdated}
+            currentImages={images}
           />
         </Suspense>
       )}
@@ -579,7 +581,7 @@ export default function AppWithAdmin() {
       {/* Main Content */}
       <div className="flex flex-col items-center justify-center px-4 sm:px-8 md:px-16 lg:px-24 py-4 md:py-0 relative z-10">
         {/* Text Section */}
-        <h1 className="leading-tight font-bold font-[Lexend] text-[#C0C0C0] text-center text-[28px] sm:text-[34px] md:text-[40px] mx-[0px] mt-[-30px] sm:mt-[-60px] md:mt-[-90px] mb-[15px]">
+        <h1 className="leading-tight font-bold font-[Lexend] text-[#C0C0C0] text-center text-[28px] sm:text-[34px] md:text-[40px] mx-[0px] mt-10 mb-[15px]">
           hello,<br />
           we are WeXlot,<br />
           we build <span className="text-[#FF4F00]">platforms that actually<br />
@@ -1131,13 +1133,13 @@ export default function AppWithAdmin() {
                   <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="#ffffff" viewBox="0 0 24 24">
                       <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                    </svg>
-                  </a>
+                      </svg>
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
       </footer>
     </div>
   );

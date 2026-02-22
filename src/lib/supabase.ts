@@ -12,6 +12,8 @@ export const IMAGE_KEYS = {
   smartLenderUpLogo: 'smartlenderup-logo',
   tillsUpLogo: 'tillsup-logo',
   pillsUpLogo: 'pillsup-logo',
+  hotelierUpLogo: 'hotelierup-logo',
+  salesUpLogo: 'salesup-logo',
   philosophyImage: 'philosophy-image',
 } as const;
 

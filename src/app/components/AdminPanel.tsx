@@ -13,6 +13,7 @@ interface AdminPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onImagesUpdated: () => void;
+  currentImages: Record<string, string | null>;
 }
 
 const ADMIN_CREDENTIALS = {
@@ -20,7 +21,7 @@ const ADMIN_CREDENTIALS = {
   password: 'Wexlot@2026'
 };
 
-export function AdminPanel({ isOpen, onClose, onImagesUpdated }: AdminPanelProps) {
+export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: AdminPanelProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +30,8 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated }: AdminPanelProps
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Image Upload State
-  const [uploadStatus, setUploadStatus] = useState<Record<string, 'idle' | 'uploading' | 'success' | 'error'>>({});
+  const [uploadStatus, setUploadStatus] = useState<Record<string, 'idle' | 'uploading' | 'success' | 'error' | 'ready'>>({});
+  const [selectedFiles, setSelectedFiles] = useState<Partial<Record<ImageKey, File>>>({});
 
   const imageDescriptions: Record<ImageKey, string> = {
     logo: 'WeXlot Logo (67x67px recommended)',
@@ -38,6 +40,8 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated }: AdminPanelProps
     smartLenderUpLogo: 'SmartLenderUp Platform Logo (161x79px)',
     tillsUpLogo: 'TillsUp Platform Logo (128x79px)',
     pillsUpLogo: 'PillsUp Platform Logo (161x79px)',
+    hotelierUpLogo: 'HotelierUp Platform Logo (161x79px)',
+    salesUpLogo: 'SalesUp Platform Logo (161x79px)',
     philosophyImage: 'Philosophy Section Image (320px wide)',
   };
 
@@ -64,22 +68,47 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated }: AdminPanelProps
     
     if (url) {
       setUploadStatus(prev => ({ ...prev, [imageKey]: 'success' }));
-      onImagesUpdated();
       setTimeout(() => {
         setUploadStatus(prev => ({ ...prev, [imageKey]: 'idle' }));
+        setSelectedFiles(prev => {
+          const newState = { ...prev };
+          delete newState[imageKey];
+          return newState;
+        });
       }, 3000);
+      return true;
     } else {
       setUploadStatus(prev => ({ ...prev, [imageKey]: 'error' }));
       setTimeout(() => {
         setUploadStatus(prev => ({ ...prev, [imageKey]: 'idle' }));
       }, 3000);
+      return false;
     }
   };
 
   const handleFileChange = (imageKey: ImageKey, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleFileUpload(imageKey, file);
+      setSelectedFiles(prev => ({ ...prev, [imageKey]: file }));
+      setUploadStatus(prev => ({ ...prev, [imageKey]: 'ready' }));
+    }
+  };
+
+  const handleSaveAll = async () => {
+    const keysToUpload = Object.keys(selectedFiles) as ImageKey[];
+    if (keysToUpload.length === 0) return;
+
+    let hasUpdates = false;
+    for (const key of keysToUpload) {
+      const file = selectedFiles[key];
+      if (file) {
+        const success = await handleFileUpload(key, file);
+        if (success) hasUpdates = true;
+      }
+    }
+
+    if (hasUpdates) {
+      onImagesUpdated();
     }
   };
 
@@ -240,24 +269,37 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated }: AdminPanelProps
                 {activeTab === 'settings' && <CRMSettings />}
                 
                 {activeTab === 'cms' && (
-                  <div className="h-full overflow-y-auto p-8">
-                    <h2 className="text-2xl font-bold font-[Lexend] text-gray-800 mb-6">Website Image Management</h2>
+                  <div className="h-full overflow-y-auto p-8 relative">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-bold font-[Lexend] text-gray-800">Website Image Management</h2>
+                      {Object.keys(selectedFiles).length > 0 && (
+                        <button
+                          onClick={handleSaveAll}
+                          className="bg-[#FF4F00] hover:bg-[#E04500] text-white px-6 py-2 rounded-lg font-[Lexend] shadow-md transition-colors flex items-center gap-2"
+                        >
+                          <Upload size={18} />
+                          Save Changes ({Object.keys(selectedFiles).length})
+                        </button>
+                      )}
+                    </div>
                     
                     <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg mb-6">
                       <p className="text-sm font-[Mallanna]">
-                        <strong>Note:</strong> Upload images to replace the current placeholders. Recommended formats: PNG, JPG, SVG. 
+                        <strong>Note:</strong> Select images to update, then click "Save Changes". Recommended formats: PNG, JPG, SVG. 
                         Keep file sizes under 2MB for optimal performance.
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
                       {(Object.keys(IMAGE_KEYS) as ImageKey[]).map((imageKey) => {
                         const status = uploadStatus[imageKey] || 'idle';
+                        const selectedFile = selectedFiles[imageKey];
+                        const currentImage = currentImages[imageKey];
                         
                         return (
                           <div
                             key={imageKey}
-                            className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
+                            className={`bg-white border rounded-xl p-6 transition-all ${selectedFile ? 'border-[#FF4F00] shadow-md ring-1 ring-[#FF4F00]' : 'border-gray-200 hover:shadow-md'}`}
                           >
                             <div className="flex items-start justify-between mb-4">
                               <div>
@@ -270,16 +312,32 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated }: AdminPanelProps
                               </div>
                               {status === 'success' && <CheckCircle className="w-6 h-6 text-green-500" />}
                               {status === 'error' && <AlertCircle className="w-6 h-6 text-red-500" />}
+                              {selectedFile && status !== 'success' && status !== 'error' && <div className="bg-[#FF4F00] w-2 h-2 rounded-full mt-2 mr-2 animate-pulse"></div>}
                             </div>
+
+                            {currentImage && !selectedFile && status !== 'success' && (
+                              <div className="mb-4 bg-gray-50 rounded-lg p-4 flex items-center justify-center h-32 border border-gray-100 relative group overflow-hidden">
+                                <img 
+                                  src={currentImage} 
+                                  alt="Current" 
+                                  className="max-h-full max-w-full object-contain relative z-10" 
+                                />
+                                <div className="absolute bottom-1 right-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm z-20">
+                                  Current
+                                </div>
+                              </div>
+                            )}
 
                             <label
                               htmlFor={`upload-${imageKey}`}
                               className={`
                                 block w-full border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
-                                transition-all
+                                transition-all relative overflow-hidden
                                 ${status === 'uploading' 
                                   ? 'border-[#FF4F00] bg-orange-50' 
-                                  : 'border-gray-200 hover:border-[#FF4F00] hover:bg-gray-50'
+                                  : selectedFile
+                                    ? 'border-[#FF4F00] bg-orange-50/30'
+                                    : 'border-gray-200 hover:border-[#FF4F00] hover:bg-gray-50'
                                 }
                               `}
                             >
@@ -291,11 +349,26 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated }: AdminPanelProps
                                 className="hidden"
                                 disabled={status === 'uploading'}
                               />
-                              <Upload className={`w-8 h-8 mx-auto mb-3 ${status === 'uploading' ? 'text-[#FF4F00] animate-pulse' : 'text-gray-400'}`} />
-                              <p className="text-sm font-medium text-gray-700">
-                                {status === 'uploading' ? 'Uploading...' : 'Click to upload image'}
-                              </p>
-                              <p className="text-xs text-gray-400 mt-1">SVG, PNG, JPG up to 2MB</p>
+                              
+                              {status === 'uploading' ? (
+                                <>
+                                  <Upload className="w-8 h-8 mx-auto mb-3 text-[#FF4F00] animate-pulse" />
+                                  <p className="text-sm font-medium text-gray-700">Uploading...</p>
+                                </>
+                              ) : selectedFile ? (
+                                <>
+                                  <ImageIcon className="w-8 h-8 mx-auto mb-3 text-[#FF4F00]" />
+                                  <p className="text-sm font-medium text-gray-900 break-all">{selectedFile.name}</p>
+                                  <p className="text-xs text-[#FF4F00] mt-1 font-semibold">Ready to save</p>
+                                  <p className="text-xs text-gray-400 mt-2">Click to change selection</p>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-8 h-8 mx-auto mb-3 text-gray-400" />
+                                  <p className="text-sm font-medium text-gray-700">Click to {currentImage ? 'replace' : 'select'} image</p>
+                                  <p className="text-xs text-gray-400 mt-1">SVG, PNG, JPG up to 2MB</p>
+                                </>
+                              )}
                             </label>
                           </div>
                         );
