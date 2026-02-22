@@ -579,9 +579,9 @@ export default function AppWithAdmin() {
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-col items-center justify-center px-4 sm:px-8 md:px-16 lg:px-24 py-4 md:py-0 relative z-10">
+      <div className="flex flex-col items-center justify-center px-4 sm:px-8 md:px-16 lg:px-24 py-4 md:py-0 relative z-10 -mt-[60px]">
         {/* Text Section */}
-        <h1 className="leading-tight font-bold font-[Lexend] text-[#C0C0C0] text-center text-[28px] sm:text-[34px] md:text-[40px] mx-[0px] mt-10 mb-[15px]">
+        <h1 className="leading-tight font-bold font-[Lexend] text-[#C0C0C0] text-center text-[28px] sm:text-[34px] md:text-[40px] mx-[0px] my-[5px]">
           hello,<br />
           we are WeXlot,<br />
           we build <span className="text-[#FF4F00]">platforms that actually<br />
