@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { getAllImages } from '../../lib/supabase';
-import hotelierUpImg from "figma:asset/8845c18fd4a159d5ae139fff4a9ce6ec805b37b7.png";
 
 const smartLenderUpLogo = "data:image/svg+xml,%3Csvg width='200' height='80' viewBox='0 0 200 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 40 L40 25 L60 40 V55 H20 V40 Z' stroke='%23FF4F00' stroke-width='3' fill='none' stroke-linejoin='round'/%3E%3Ctext x='70' y='48' font-family='sans-serif' font-size='20' font-weight='bold' fill='%23333'%3ESmartLender%3Ctspan fill='%23FF4F00'%3EUp%3C/tspan%3E%3C/text%3E%3C/svg%3E";
 const hotelierUpLogo = "data:image/svg+xml,%3Csvg width='200' height='80' viewBox='0 0 200 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 30 V50 M60 30 V50 M20 40 H60 M20 30 H60 M25 30 V25 H35 V30 M45 30 V25 H55 V30' stroke='%23FF4F00' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ctext x='70' y='48' font-family='sans-serif' font-size='22' font-weight='bold' fill='%23333'%3EHotelier%3Ctspan fill='%23FF4F00'%3EUp%3C/tspan%3E%3C/text%3E%3C/svg%3E";
@@ -72,7 +71,7 @@ export default function AppWithAdmin() {
     scissorUpLogo: "https://via.placeholder.com/199x79/666666/FFFFFF?text=ScissorUp",
     pillsUpLogo: pillsUpLogo,
     smartLenderUpLogo: smartLenderUpLogo,
-    hotelierUpLogo: hotelierUpImg,
+    hotelierUpLogo: hotelierUpLogo,
     tillsUpLogo: "https://via.placeholder.com/128x79/666666/FFFFFF?text=TillsUp",
     salesUpLogo: salesUpLogo,
     philosophyImage: "https://images.unsplash.com/photo-1609619385076-36a873425636?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjcmVhdGl2ZSUyMHRoaW5raW5nJTIwaW5ub3ZhdGlvbiUyMGxpZ2h0YnVsYnxlbnwxfHx8fDE3NzEzMjE4MTh8MA&ixlib=rb-4.1.0&q=60&w=1080&auto=format",
