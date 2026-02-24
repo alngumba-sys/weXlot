@@ -5,6 +5,12 @@ import { CheckCircle, Circle, Clock, Calendar, AlertCircle, Plus } from 'lucide-
 import { Activity, ActivityType } from '../../../types/crm';
 
 export function CRMActivities() {
+  const [filter, setFilter] = useState<'all' | 'upcoming' | 'overdue' | 'completed'>('upcoming');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newActivity, setNewActivity] = useState<Partial<Activity>>({ type: 'task' });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   // Safely handle context - return null if not available (during hot reload)
   let crmContext;
   try {
@@ -14,9 +20,6 @@ export function CRMActivities() {
   }
   
   const { activities, addActivity, completeActivity, contacts, deals, staff } = crmContext;
-  const [filter, setFilter] = useState<'all' | 'upcoming' | 'overdue' | 'completed'>('upcoming');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newActivity, setNewActivity] = useState<Partial<Activity>>({ type: 'task' });
 
   const filteredActivities = activities.filter(activity => {
     if (filter === 'completed') return activity.completed;
@@ -35,17 +38,26 @@ export function CRMActivities() {
     e.preventDefault();
     if (!newActivity.description) return;
 
-    await addActivity({
-      type: newActivity.type as ActivityType || 'task',
-      description: newActivity.description,
-      due_date: newActivity.due_date,
-      completed: false,
-      contact_id: newActivity.contact_id,
-      deal_id: newActivity.deal_id,
-      owner_id: newActivity.owner_id
-    });
-    setIsAddModalOpen(false);
-    setNewActivity({ type: 'task' });
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      await addActivity({
+        type: newActivity.type as ActivityType || 'task',
+        description: newActivity.description,
+        due_date: newActivity.due_date,
+        completed: false,
+        contact_id: newActivity.contact_id,
+        deal_id: newActivity.deal_id,
+        owner_id: newActivity.owner_id
+      });
+      setIsAddModalOpen(false);
+      setNewActivity({ type: 'task' });
+    } catch (error) {
+      setSaveError('Failed to add activity. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -217,6 +229,12 @@ export function CRMActivities() {
                 </select>
               </div>
 
+              {saveError && (
+                <div className="text-red-500 text-sm mt-2">
+                  {saveError}
+                </div>
+              )}
+
               <div className="flex justify-end gap-3 mt-6">
                 <button 
                   type="button"
@@ -228,8 +246,9 @@ export function CRMActivities() {
                 <button 
                   type="submit"
                   className="px-6 py-2 bg-[#FF4F00] text-white rounded-lg hover:bg-[#e04500]"
+                  disabled={isSaving}
                 >
-                  Create Task
+                  {isSaving ? 'Creating...' : 'Create Task'}
                 </button>
               </div>
             </form>

@@ -15,6 +15,14 @@ const STAGES: { id: DealStage; label: string; color: string }[] = [
 ];
 
 export function CRMPipeline() {
+  const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newDeal, setNewDeal] = useState<Partial<Deal>>({ stage: 'lead', probability: 20 });
+  const [openMenuDealId, setOpenMenuDealId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   // Safely handle context - return null if not available (during hot reload)
   let crmContext;
   try {
@@ -23,14 +31,9 @@ export function CRMPipeline() {
     return null;
   }
   
-  const { deals, updateDealStage, deleteDeal, addDeal, contacts, companies, platforms, staff } = crmContext;
-  const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newDeal, setNewDeal] = useState<Partial<Deal>>({ stage: 'lead', probability: 20 });
-  const [openMenuDealId, setOpenMenuDealId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const { deals, updateDealStage, deleteDeal, addDeal, contacts, companies, platforms, staff, loading } = crmContext;
+
+  console.log('[CRMPipeline] Rendering with', deals?.length || 0, 'deals, loading:', loading);
 
   // Group deals by stage, then platform, then contact
   const dealsByStageAndPlatformAndContact = useMemo(() => {

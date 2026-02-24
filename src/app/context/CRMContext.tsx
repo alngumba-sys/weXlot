@@ -72,6 +72,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
       console.log('[CRM] Fetched deals from database:', dealsData?.length || 0, 'deals');
       console.log('[CRM] Fetched contacts:', contactsData?.length || 0, 'contacts');
+      console.log('[CRM] Fetched activities:', activitiesData?.length || 0, 'activities');
       console.log('[CRM] Fetched platforms:', platformsData?.length || 0, 'platforms');
 
       setStaff(staffData || []);
@@ -186,12 +187,14 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const addContact = async (contact: Omit<Contact, 'id' | 'created_at' | 'updated_at' | 'company'>) => {
     try {
+      console.log('[CRM] Creating new contact:', contact);
       const { data, error } = await supabase.from('contacts').insert(contact).select('*, company:companies(*), owner:staff(*)').single();
       if (error) throw error;
+      console.log('[CRM] Contact created successfully in database:', data);
       setContacts(prev => [...prev, data]);
       return data;
     } catch (err) {
-      console.error('Error adding contact:', err);
+      console.error('[CRM] Error adding contact:', err);
       return null;
     }
   };
@@ -256,12 +259,14 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   
   const addActivity = async (activity: Omit<Activity, 'id' | 'created_at' | 'completed_at'>) => {
       try {
+          console.log('[CRM] Creating new activity:', activity);
           const { data, error } = await supabase.from('activities').insert(activity).select('*, contact:contacts(*), deal:deals(*), owner:staff(*)').single();
           if (error) throw error;
+          console.log('[CRM] Activity created successfully in database:', data);
           setActivities(prev => [...prev, data]);
           return data;
       } catch (err) {
-          console.error('Error adding activity:', err);
+          console.error('[CRM] Error adding activity:', err);
           return null;
       }
   };

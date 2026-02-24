@@ -4,6 +4,12 @@ import { Search, Plus } from 'lucide-react';
 import { Contact } from '../../../types/crm';
 
 export function CRMContacts() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [newContact, setNewContact] = useState<Partial<Contact>>({});
+
   // Safely handle context - return null if not available (during hot reload)
   let crmContext;
   try {
@@ -12,17 +18,14 @@ export function CRMContacts() {
     return null;
   }
   
-  const { contacts, addContact } = crmContext;
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const { contacts, addContact, loading } = crmContext;
 
-  // Form State
-  const [newContact, setNewContact] = useState<Partial<Contact>>({});
+  console.log('[CRMContacts] Rendering with', contacts?.length || 0, 'contacts, loading:', loading);
 
   const filteredContacts = contacts.filter(c => 
-    c.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.company?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -31,20 +34,29 @@ export function CRMContacts() {
     e.preventDefault();
     if (!newContact.first_name || !newContact.last_name) return;
 
-    await addContact({
-      first_name: newContact.first_name,
-      last_name: newContact.last_name,
-      email: newContact.email,
-      phone: newContact.phone,
-      job_title: newContact.job_title,
-      location: newContact.location,
-      main_need: newContact.main_need,
-      budget_range: newContact.budget_range,
-      decision_authority: newContact.decision_authority,
-      notes: newContact.notes
-    });
-    setIsAddModalOpen(false);
-    setNewContact({});
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      await addContact({
+        first_name: newContact.first_name,
+        last_name: newContact.last_name,
+        email: newContact.email,
+        phone: newContact.phone,
+        job_title: newContact.job_title,
+        location: newContact.location,
+        main_need: newContact.main_need,
+        budget_range: newContact.budget_range,
+        decision_authority: newContact.decision_authority,
+        notes: newContact.notes
+      });
+      setIsAddModalOpen(false);
+      setNewContact({});
+    } catch (error) {
+      setSaveError('Failed to add contact. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -249,6 +261,12 @@ export function CRMContacts() {
                 />
               </div>
 
+              {saveError && (
+                <div className="text-red-500 text-sm mb-4">
+                  {saveError}
+                </div>
+              )}
+
               <div className="flex justify-end gap-3 mt-4">
                 <button 
                   type="button"
@@ -260,8 +278,9 @@ export function CRMContacts() {
                 <button 
                   type="submit"
                   className="px-6 py-2 bg-[#FF4F00] text-white rounded-lg hover:bg-[#e04500]"
+                  disabled={isSaving}
                 >
-                  Save Contact
+                  {isSaving ? 'Saving...' : 'Save Contact'}
                 </button>
               </div>
             </form>
