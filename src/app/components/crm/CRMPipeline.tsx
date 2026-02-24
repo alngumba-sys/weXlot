@@ -23,7 +23,7 @@ export function CRMPipeline() {
     return null;
   }
   
-  const { deals, updateDealStage, deleteDeal, addDeal, contacts, companies, platforms } = crmContext;
+  const { deals, updateDealStage, deleteDeal, addDeal, contacts, companies, platforms, staff } = crmContext;
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newDeal, setNewDeal] = useState<Partial<Deal>>({ stage: 'lead', probability: 20 });
@@ -434,6 +434,20 @@ export function CRMPipeline() {
                   <option value="">Select Contact...</option>
                   {contacts.map(c => (
                     <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Owner (Staff)</label>
+                <select 
+                  value={newDeal.owner_id || ''}
+                  onChange={e => setNewDeal({...newDeal, owner_id: e.target.value})}
+                  className="w-full p-2 border border-gray-200 rounded-lg"
+                >
+                  <option value="">Select Owner...</option>
+                  {staff.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
               </div>
