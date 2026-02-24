@@ -50,6 +50,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
+      console.log('[CRM] Fetching all data from Supabase...');
       // Parallel fetch for speed
       const [
         { data: staffData },
@@ -69,6 +70,10 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         supabase.from('platforms').select('*')
       ]);
 
+      console.log('[CRM] Fetched deals from database:', dealsData?.length || 0, 'deals');
+      console.log('[CRM] Fetched contacts:', contactsData?.length || 0, 'contacts');
+      console.log('[CRM] Fetched platforms:', platformsData?.length || 0, 'platforms');
+
       setStaff(staffData || []);
       setContacts(contactsData || []);
       setCompanies(companiesData || []);
@@ -76,6 +81,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       setActivities(activitiesData || []);
       setInteractions(interactionsData || []);
       setPlatforms(platformsData || []);
+      
+      console.log('[CRM] Successfully loaded all data from Supabase');
     } catch (err: any) {
       console.error('Error fetching CRM data:', err);
       // Don't set global error if it's just missing tables (which might happen on first run)
@@ -215,12 +222,14 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const addDeal = async (deal: Omit<Deal, 'id' | 'created_at' | 'updated_at' | 'contact' | 'company' | 'platform'>) => {
     try {
+      console.log('[CRM] Creating new deal:', deal);
       const { data, error } = await supabase.from('deals').insert(deal).select('*, contact:contacts(*), company:companies(*), platform:platforms(*), owner:staff(*)').single();
       if (error) throw error;
+      console.log('[CRM] Deal created successfully in database:', data);
       setDeals(prev => [...prev, data]);
       return data;
     } catch (err) {
-      console.error('Error adding deal:', err);
+      console.error('[CRM] Error adding deal:', err);
       return null;
     }
   };

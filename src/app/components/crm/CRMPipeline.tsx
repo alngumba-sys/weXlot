@@ -28,6 +28,8 @@ export function CRMPipeline() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newDeal, setNewDeal] = useState<Partial<Deal>>({ stage: 'lead', probability: 20 });
   const [openMenuDealId, setOpenMenuDealId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Group deals by stage, then platform, then contact
@@ -142,19 +144,28 @@ export function CRMPipeline() {
     e.preventDefault();
     if (!newDeal.title || !newDeal.value) return;
 
-    await addDeal({
-      title: newDeal.title,
-      value: Number(newDeal.value),
-      stage: newDeal.stage as DealStage || 'lead',
-      probability: Number(newDeal.probability),
-      expected_close_date: newDeal.expected_close_date,
-      contact_id: newDeal.contact_id,
-      company_id: newDeal.company_id,
-      platform_id: newDeal.platform_id,
-      owner_id: newDeal.owner_id
-    });
-    setIsAddModalOpen(false);
-    setNewDeal({ stage: 'lead', probability: 20 });
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      await addDeal({
+        title: newDeal.title,
+        value: Number(newDeal.value),
+        stage: newDeal.stage as DealStage || 'lead',
+        probability: Number(newDeal.probability),
+        expected_close_date: newDeal.expected_close_date,
+        contact_id: newDeal.contact_id,
+        company_id: newDeal.company_id,
+        platform_id: newDeal.platform_id,
+        owner_id: newDeal.owner_id
+      });
+      setIsAddModalOpen(false);
+      setNewDeal({ stage: 'lead', probability: 20 });
+    } catch (error) {
+      setSaveError('Failed to create deal. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -273,7 +284,7 @@ export function CRMPipeline() {
                                         }}
                                         className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded"
                                       >
-                                        <MoreHorizontal size={14} />
+                                        <MoreHorizontal size={18} className="text-gray-400 opacity-40" />
                                       </button>
                                       
                                       {/* Dropdown Menu */}
@@ -437,6 +448,10 @@ export function CRMPipeline() {
                 />
               </div>
 
+              {saveError && (
+                <div className="text-sm text-red-500 mt-2">{saveError}</div>
+              )}
+
               <div className="flex justify-end gap-3 mt-6">
                 <button 
                   type="button"
@@ -448,8 +463,9 @@ export function CRMPipeline() {
                 <button 
                   type="submit"
                   className="px-6 py-2 bg-[#FF4F00] text-white rounded-lg hover:bg-[#e04500]"
+                  disabled={isSaving}
                 >
-                  Create Deal
+                  {isSaving ? 'Creating...' : 'Create Deal'}
                 </button>
               </div>
             </form>
