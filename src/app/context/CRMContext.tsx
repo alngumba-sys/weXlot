@@ -91,6 +91,56 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchData();
+
+    // Set up real-time subscriptions for all tables to ensure data stays in sync
+    const staffSubscription = supabase
+      .channel('staff-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, () => {
+        console.log('Staff data changed, refreshing...');
+        fetchData();
+      })
+      .subscribe();
+
+    const contactsSubscription = supabase
+      .channel('contacts-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => {
+        console.log('Contacts data changed, refreshing...');
+        fetchData();
+      })
+      .subscribe();
+
+    const dealsSubscription = supabase
+      .channel('deals-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
+        console.log('Deals data changed, refreshing...');
+        fetchData();
+      })
+      .subscribe();
+
+    const activitiesSubscription = supabase
+      .channel('activities-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
+        console.log('Activities data changed, refreshing...');
+        fetchData();
+      })
+      .subscribe();
+
+    const platformsSubscription = supabase
+      .channel('platforms-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'platforms' }, () => {
+        console.log('Platforms data changed, refreshing...');
+        fetchData();
+      })
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      staffSubscription.unsubscribe();
+      contactsSubscription.unsubscribe();
+      dealsSubscription.unsubscribe();
+      activitiesSubscription.unsubscribe();
+      platformsSubscription.unsubscribe();
+    };
   }, []);
 
   const addStaff = async (newStaff: Omit<Staff, 'id' | 'created_at'>) => {
