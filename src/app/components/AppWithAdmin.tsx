@@ -56,12 +56,10 @@ export default function AppWithAdmin() {
   const [isContactDropdownOpen, setIsContactDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [logoClickCount, setLogoClickCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const contactDropdownRef = useRef<HTMLDivElement>(null);
   const whoWeAreRef = useRef<HTMLDivElement>(null);
   const whyUsRef = useRef<HTMLDivElement>(null);
-  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Default fallback image URLs
   const defaultImages = {
@@ -163,23 +161,8 @@ export default function AppWithAdmin() {
   }, []);
 
   const handleLogoClick = () => {
-    setLogoClickCount(prev => prev + 1);
-    
-    // Clear previous timeout
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-    }
-    
-    // Reset counter after 2 seconds of no clicks
-    clickTimeoutRef.current = setTimeout(() => {
-      setLogoClickCount(0);
-    }, 2000);
-    
-    // Open admin panel after 5 clicks
-    if (logoClickCount + 1 >= 5) {
-      setIsAdminOpen(true);
-      setLogoClickCount(0);
-    }
+    // Open admin panel immediately on any logo click
+    setIsAdminOpen(true);
   };
 
   const handleImagesUpdated = () => {
@@ -532,18 +515,18 @@ export default function AppWithAdmin() {
         )}
       </header>
 
-      {/* Logo Section - Click 5 times to open admin */}
-      <div className="flex justify-start px-4 sm:px-8 md:px-16 lg:px-24">
+      {/* Logo Section - Click to open admin */}
+      <div className="flex justify-start px-4 sm:px-8 md:px-16 lg:px-24 relative z-20">
         <button
           onClick={handleLogoClick}
-          className="cursor-pointer focus:outline-none"
-          aria-label="WeXlot Logo"
+          className="cursor-pointer focus:outline-none p-3 -m-3 hover:opacity-80 transition-opacity relative z-20"
+          aria-label="WeXlot Logo - Click to open admin"
         >
           <ImageWithFallback 
             key={images.logo}
             src={images.logo}
             alt="WeXlot Logo"
-            className="w-[50px] sm:w-[60px] md:w-[67px] h-auto"
+            className="w-[50px] sm:w-[60px] md:w-[67px] h-auto pointer-events-none"
             loading="eager"
           />
         </button>

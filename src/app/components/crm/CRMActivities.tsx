@@ -42,7 +42,8 @@ export function CRMActivities() {
     setSaveError(null);
 
     try {
-      await addActivity({
+      console.log('[Activities] Submitting new activity:', newActivity);
+      const result = await addActivity({
         type: newActivity.type as ActivityType || 'task',
         description: newActivity.description,
         due_date: newActivity.due_date,
@@ -51,10 +52,19 @@ export function CRMActivities() {
         deal_id: newActivity.deal_id,
         owner_id: newActivity.owner_id
       });
+      
+      if (!result) {
+        console.error('[Activities] Failed to create activity - no data returned');
+        setSaveError('Failed to add activity. Check console for details.');
+        return;
+      }
+      
+      console.log('[Activities] Activity created successfully:', result);
       setIsAddModalOpen(false);
       setNewActivity({ type: 'task' });
-    } catch (error) {
-      setSaveError('Failed to add activity. Please try again.');
+    } catch (error: any) {
+      console.error('[Activities] Exception while adding activity:', error);
+      setSaveError(error?.message || 'Failed to add activity. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -63,7 +73,12 @@ export function CRMActivities() {
   return (
     <div className="h-full bg-gray-50 flex flex-col">
       <div className="p-6 border-b border-gray-200 bg-white flex justify-between items-center shadow-sm">
-        <h2 className="text-xl font-bold font-[Lexend]">My Activities</h2>
+        <div>
+          <h2 className="text-xl font-bold font-[Lexend]">My Activities</h2>
+          <p className="text-xs text-gray-400 mt-1">
+            {activities.length} total • {filteredActivities.length} in view
+          </p>
+        </div>
         <div className="flex gap-2">
           <button 
             onClick={() => setFilter('upcoming')}

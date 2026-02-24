@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { uploadImage, IMAGE_KEYS, ImageKey } from '../../lib/supabase';
-import { X, Upload, CheckCircle, AlertCircle, LayoutDashboard, Trello, Users, Calendar, Settings, Image as ImageIcon, LogOut } from 'lucide-react';
+import { X, Upload, CheckCircle, AlertCircle, LayoutDashboard, Trello, Users, Calendar, Settings, Image as ImageIcon, LogOut, Eye, EyeOff } from 'lucide-react';
 import { CRMProvider } from '../context/CRMContext';
 import { CRMDashboard } from './crm/CRMDashboard';
 import { CRMPipeline } from './crm/CRMPipeline';
@@ -25,6 +25,7 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'pipeline' | 'contacts' | 'activities' | 'cms' | 'settings'>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -140,13 +141,22 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                   </div>
                   <div>
                     <label className="block font-bold text-gray-700 mb-2 text-[13px]">Password</label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00] transition-all px-[16px] py-[7px]"
-                      placeholder="Enter password"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00] transition-all px-[16px] py-[7px]"
+                        placeholder="Enter password"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                   
                   {error && (
@@ -257,9 +267,10 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
               <div className="flex-1 overflow-hidden relative bg-gray-50">
                 <button 
                   onClick={onClose}
-                  className="absolute top-4 right-4 z-50 p-2 bg-white rounded-full shadow-md text-gray-500 hover:text-red-500 transition-colors"
+                  className="fixed top-6 right-6 z-[200] p-2.5 bg-white rounded-full shadow-lg text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all border border-gray-200"
+                  aria-label="Close panel"
                 >
-                  <X size={24} />
+                  <X size={20} />
                 </button>
 
                 {activeTab === 'dashboard' && <CRMDashboard />}

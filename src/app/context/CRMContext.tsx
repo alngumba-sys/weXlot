@@ -1,3 +1,24 @@
+/**
+ * CRM Context - DIRECT DATABASE INTEGRATION
+ * 
+ * CRITICAL ARCHITECTURE RULES:
+ * =============================
+ * 1. NO localStorage or sessionStorage - EVER
+ * 2. NO local state caching beyond what's needed for React rendering
+ * 3. EVERY write operation (create/update/delete) immediately triggers a full refetch from Supabase
+ * 4. ALL data displayed in the UI comes directly from the live Supabase database
+ * 5. Real-time subscriptions ensure data stays synchronized across all users
+ * 
+ * DATA FLOW:
+ * ==========
+ * User Action → Write to Supabase → Refetch ALL data from Supabase → Update UI
+ * 
+ * This ensures:
+ * - Zero data inconsistencies
+ * - Real-time synchronization
+ * - Single source of truth (the database)
+ * - All dashboard metrics reflect live database state
+ */
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Staff, Contact, Company, Deal, Activity, Interaction, Platform } from '../../types/crm';
 import { supabase } from '../../lib/supabase';
@@ -46,11 +67,15 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // CRITICAL: This is the ONLY source of truth for all CRM data.
+  // After EVERY write operation (create/update/delete), we refetch ALL data from Supabase.
+  // NO local state caching - everything comes directly from the database.
   const fetchData = async () => {
+    const timestamp = new Date().toISOString();
     setLoading(true);
     setError(null);
     try {
-      console.log('[CRM] Fetching all data from Supabase...');
+      console.log(`[CRM ${timestamp}] 🔄 Fetching all data directly from Supabase database...`);
       // Parallel fetch for speed
       const [
         { data: staffData },
@@ -70,10 +95,15 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         supabase.from('platforms').select('*')
       ]);
 
-      console.log('[CRM] Fetched deals from database:', dealsData?.length || 0, 'deals');
-      console.log('[CRM] Fetched contacts:', contactsData?.length || 0, 'contacts');
-      console.log('[CRM] Fetched activities:', activitiesData?.length || 0, 'activities');
-      console.log('[CRM] Fetched platforms:', platformsData?.length || 0, 'platforms');
+      console.log(`[CRM ${timestamp}] ✓ Successfully fetched from Supabase:`, {
+        staff: staffData?.length || 0,
+        contacts: contactsData?.length || 0,
+        companies: companiesData?.length || 0,
+        deals: dealsData?.length || 0,
+        activities: activitiesData?.length || 0,
+        interactions: interactionsData?.length || 0,
+        platforms: platformsData?.length || 0
+      });
 
       setStaff(staffData || []);
       setContacts(contactsData || []);
@@ -153,9 +183,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const addStaff = async (newStaff: Omit<Staff, 'id' | 'created_at'>) => {
     try {
+      console.log('[CRM] Creating new staff:', newStaff);
       const { data, error } = await supabase.from('staff').insert(newStaff).select().single();
       if (error) throw error;
-      setStaff(prev => [...prev, data]);
+      console.log('[CRM] Staff created successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
       console.error('Error adding staff:', err);
@@ -165,9 +197,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const updateStaff = async (id: string, updates: Partial<Staff>) => {
     try {
+      console.log('[CRM] Updating staff:', id, updates);
       const { data, error } = await supabase.from('staff').update(updates).eq('id', id).select().single();
       if (error) throw error;
-      setStaff(prev => prev.map(s => s.id === id ? data : s));
+      console.log('[CRM] Staff updated successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
       console.error('Error updating staff:', err);
@@ -177,9 +211,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const deleteStaff = async (id: string) => {
     try {
+      console.log('[CRM] Deleting staff:', id);
       const { error } = await supabase.from('staff').delete().eq('id', id);
       if (error) throw error;
-      setStaff(prev => prev.filter(s => s.id !== id));
+      console.log('[CRM] Staff deleted successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
     } catch (err) {
       console.error('Error deleting staff:', err);
     }
@@ -190,8 +226,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       console.log('[CRM] Creating new contact:', contact);
       const { data, error } = await supabase.from('contacts').insert(contact).select('*, company:companies(*), owner:staff(*)').single();
       if (error) throw error;
-      console.log('[CRM] Contact created successfully in database:', data);
-      setContacts(prev => [...prev, data]);
+      console.log('[CRM] Contact created successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
       console.error('[CRM] Error adding contact:', err);
@@ -201,9 +237,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   
   const updateContact = async (id: string, updates: Partial<Contact>) => {
     try {
+      console.log('[CRM] Updating contact:', id, updates);
       const { data, error } = await supabase.from('contacts').update(updates).eq('id', id).select('*, company:companies(*), owner:staff(*)').single();
       if (error) throw error;
-      setContacts(prev => prev.map(c => c.id === id ? data : c));
+      console.log('[CRM] Contact updated successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
       console.error('Error updating contact:', err);
@@ -213,9 +251,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   
   const addCompany = async (company: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('[CRM] Creating new company:', company);
       const { data, error } = await supabase.from('companies').insert(company).select().single();
       if (error) throw error;
-      setCompanies(prev => [...prev, data]);
+      console.log('[CRM] Company created successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
       console.error('Error adding company:', err);
@@ -228,8 +268,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       console.log('[CRM] Creating new deal:', deal);
       const { data, error } = await supabase.from('deals').insert(deal).select('*, contact:contacts(*), company:companies(*), platform:platforms(*), owner:staff(*)').single();
       if (error) throw error;
-      console.log('[CRM] Deal created successfully in database:', data);
-      setDeals(prev => [...prev, data]);
+      console.log('[CRM] Deal created successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
       console.error('[CRM] Error adding deal:', err);
@@ -239,9 +279,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const updateDealStage = async (id: string, stage: string) => {
     try {
+      console.log('[CRM] Updating deal stage:', id, 'to', stage);
       const { error } = await supabase.from('deals').update({ stage }).eq('id', id);
       if (error) throw error;
-      setDeals(prev => prev.map(d => d.id === id ? { ...d, stage: stage as any } : d));
+      console.log('[CRM] Deal stage updated successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
     } catch (err) {
       console.error('Error updating deal stage:', err);
     }
@@ -249,9 +291,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   
   const deleteDeal = async (id: string) => {
     try {
+      console.log('[CRM] Deleting deal:', id);
       const { error } = await supabase.from('deals').delete().eq('id', id);
       if (error) throw error;
-      setDeals(prev => prev.filter(d => d.id !== id));
+      console.log('[CRM] Deal deleted successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
     } catch (err) {
       console.error('Error deleting deal:', err);
     }
@@ -259,23 +303,35 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   
   const addActivity = async (activity: Omit<Activity, 'id' | 'created_at' | 'completed_at'>) => {
       try {
-          console.log('[CRM] Creating new activity:', activity);
+          console.log('[CRM] 📝 Creating new activity with data:', JSON.stringify(activity, null, 2));
           const { data, error } = await supabase.from('activities').insert(activity).select('*, contact:contacts(*), deal:deals(*), owner:staff(*)').single();
-          if (error) throw error;
-          console.log('[CRM] Activity created successfully in database:', data);
-          setActivities(prev => [...prev, data]);
+          if (error) {
+            console.error('[CRM] ❌ ERROR creating activity:', error);
+            throw error;
+          }
+          console.log('[CRM] ✅ Activity created successfully in DB:', data);
+          console.log('[CRM] 🔄 Refetching all data from database...');
+          await fetchData(); // Refetch everything from database
           return data;
-      } catch (err) {
-          console.error('[CRM] Error adding activity:', err);
+      } catch (err: any) {
+          console.error('[CRM] ❌ EXCEPTION adding activity:', err);
+          console.error('[CRM] Error details:', {
+            message: err?.message,
+            details: err?.details,
+            hint: err?.hint,
+            code: err?.code
+          });
           return null;
       }
   };
   
   const completeActivity = async (id: string, completed: boolean) => {
       try {
+          console.log('[CRM] Updating activity completion:', id, completed);
           const { error } = await supabase.from('activities').update({ completed, completed_at: completed ? new Date().toISOString() : null }).eq('id', id);
           if (error) throw error;
-          setActivities(prev => prev.map(a => a.id === id ? { ...a, completed, completed_at: completed ? new Date().toISOString() : null } : a));
+          console.log('[CRM] Activity updated successfully, refetching all data from database...');
+          await fetchData(); // Refetch everything from database
       } catch (err) {
           console.error('Error completing activity:', err);
       }
@@ -283,9 +339,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   
   const addPlatform = async (name: string) => {
       try {
+          console.log('[CRM] Creating new platform:', name);
           const { data, error } = await supabase.from('platforms').insert({ name }).select().single();
           if (error) throw error;
-          setPlatforms(prev => [...prev, data]);
+          console.log('[CRM] Platform created successfully, refetching all data from database...');
+          await fetchData(); // Refetch everything from database
           return data;
       } catch (err) {
           console.error('Error adding platform:', err);
@@ -295,9 +353,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const updatePlatform = async (id: string, name: string) => {
     try {
+      console.log('[CRM] Updating platform:', id, name);
       const { data, error } = await supabase.from('platforms').update({ name }).eq('id', id).select().single();
       if (error) throw error;
-      setPlatforms(prev => prev.map(p => p.id === id ? data : p));
+      console.log('[CRM] Platform updated successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
       console.error('Error updating platform:', err);
@@ -307,9 +367,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const deletePlatform = async (id: string) => {
     try {
+      console.log('[CRM] Deleting platform:', id);
       const { error } = await supabase.from('platforms').delete().eq('id', id);
       if (error) throw error;
-      setPlatforms(prev => prev.filter(p => p.id !== id));
+      console.log('[CRM] Platform deleted successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
     } catch (err) {
       console.error('Error deleting platform:', err);
     }
@@ -317,9 +379,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const addInteraction = async (interaction: Omit<Interaction, 'id' | 'created_at'>) => {
     try {
+      console.log('[CRM] Creating new interaction:', interaction);
       const { data, error } = await supabase.from('interactions').insert(interaction).select().single();
       if (error) throw error;
-      setInteractions(prev => [data, ...prev]);
+      console.log('[CRM] Interaction created successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
       console.error('Error adding interaction:', err);
