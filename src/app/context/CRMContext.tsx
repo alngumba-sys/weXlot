@@ -19,9 +19,11 @@ interface CRMContextType {
   updateStaff: (id: string, updates: Partial<Staff>) => Promise<Staff | null>;
   deleteStaff: (id: string) => Promise<void>;
   addContact: (contact: Omit<Contact, 'id' | 'created_at' | 'updated_at' | 'company'>) => Promise<Contact | null>;
+  updateContact: (id: string, updates: Partial<Contact>) => Promise<Contact | null>;
   addCompany: (company: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => Promise<Company | null>;
   addDeal: (deal: Omit<Deal, 'id' | 'created_at' | 'updated_at' | 'contact' | 'company' | 'platform'>) => Promise<Deal | null>;
   updateDealStage: (id: string, stage: string) => Promise<void>;
+  deleteDeal: (id: string) => Promise<void>;
   addActivity: (activity: Omit<Activity, 'id' | 'created_at' | 'completed_at'>) => Promise<Activity | null>;
   completeActivity: (id: string, completed: boolean) => Promise<void>;
   addPlatform: (name: string) => Promise<Platform | null>;
@@ -137,6 +139,18 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     }
   };
   
+  const updateContact = async (id: string, updates: Partial<Contact>) => {
+    try {
+      const { data, error } = await supabase.from('contacts').update(updates).eq('id', id).select('*, company:companies(*), owner:staff(*)').single();
+      if (error) throw error;
+      setContacts(prev => prev.map(c => c.id === id ? data : c));
+      return data;
+    } catch (err) {
+      console.error('Error updating contact:', err);
+      return null;
+    }
+  };
+  
   const addCompany = async (company: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase.from('companies').insert(company).select().single();
@@ -168,6 +182,16 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       setDeals(prev => prev.map(d => d.id === id ? { ...d, stage: stage as any } : d));
     } catch (err) {
       console.error('Error updating deal stage:', err);
+    }
+  };
+  
+  const deleteDeal = async (id: string) => {
+    try {
+      const { error } = await supabase.from('deals').delete().eq('id', id);
+      if (error) throw error;
+      setDeals(prev => prev.filter(d => d.id !== id));
+    } catch (err) {
+      console.error('Error deleting deal:', err);
     }
   };
   
@@ -255,9 +279,11 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       updateStaff,
       deleteStaff,
       addContact,
+      updateContact,
       addCompany,
       addDeal,
       updateDealStage,
+      deleteDeal,
       addActivity,
       completeActivity,
       addPlatform,

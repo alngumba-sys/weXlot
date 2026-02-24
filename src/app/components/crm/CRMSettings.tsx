@@ -4,11 +4,19 @@ import { User, Layers, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 import { Staff, Platform } from '../../../types/crm';
 
 export function CRMSettings() {
+  // Safely handle context - return null if not available (during hot reload)
+  let crmContext;
+  try {
+    crmContext = useCRM();
+  } catch {
+    return null;
+  }
+  
   const { 
     staff, platforms, 
     addStaff, updateStaff, deleteStaff,
     addPlatform, updatePlatform, deletePlatform 
-  } = useCRM();
+  } = crmContext;
   const [activeTab, setActiveTab] = useState<'staff' | 'platforms'>('staff');
   
   const [newStaff, setNewStaff] = useState<Partial<Staff>>({});

@@ -377,11 +377,12 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                   </div>
                 )}
               </div>
+
+              {/* Quick Add Button - Only visible when authenticated */}
+              <QuickAddLead />
             </>
           )}
 
-          {/* Quick Add Button - Always Visible in Admin Panel */}
-          <QuickAddLead />
         </div>
       </CRMProvider>
     </div>

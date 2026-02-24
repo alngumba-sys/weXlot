@@ -5,7 +5,15 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { Briefcase, DollarSign, TrendingUp, Users, Phone, Mail, Calendar } from 'lucide-react';
 
 export function CRMDashboard() {
-  const { deals, interactions, staff, activities } = useCRM();
+  // Safely handle context - return null if not available (during hot reload)
+  let crmContext;
+  try {
+    crmContext = useCRM();
+  } catch {
+    return null;
+  }
+  
+  const { deals, interactions, staff, activities, loading, error } = crmContext;
 
   const stats = useMemo(() => {
     const totalPipelineValue = deals.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
@@ -29,6 +37,28 @@ export function CRMDashboard() {
   }, [deals, interactions, staff, activities]);
 
   const recentInteractions = interactions.slice(0, 5);
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF4F00] mx-auto"></div>
+          <p className="mt-4 text-gray-500">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">Error loading dashboard</p>
+          <p className="text-gray-500 text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6 overflow-y-auto h-full bg-gray-50">

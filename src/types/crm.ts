@@ -28,6 +28,7 @@ export interface Contact {
   job_title?: string;
   company_id?: string;
   company?: Company;
+  location?: string; // Added location field
   main_need?: string; // Custom field
   budget_range?: string; // Custom field
   decision_authority?: string; // Custom field
@@ -76,6 +77,7 @@ export interface Activity {
   contact_id?: string;
   deal_id?: string;
   owner_id?: string; // Who performed/assigned
+  owner?: Staff; // Join
   created_at: string;
 }
 

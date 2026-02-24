@@ -4,7 +4,15 @@ import { Plus, X, User, Phone, MapPin, FileText, Zap, Layers } from 'lucide-reac
 import { toast } from 'sonner';
 
 export function QuickAddLead() {
-  const { addContact, addDeal, staff, platforms } = useCRM();
+  // Safely handle context - return null if not available (during hot reload)
+  let crmContext;
+  try {
+    crmContext = useCRM();
+  } catch {
+    return null;
+  }
+  
+  const { addContact, addDeal, staff, platforms } = crmContext;
   const [isOpen, setIsOpen] = useState(false);
   
   const [formData, setFormData] = useState({

@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useCRM } from '../../context/CRMContext';
 import { Deal, DealStage } from '../../../types/crm';
 import { format } from 'date-fns';
-import { MoreHorizontal, Plus, DollarSign } from 'lucide-react';
+import { MoreHorizontal, Plus, DollarSign, ChevronRight, Trash2, User, Layers } from 'lucide-react';
 
 const STAGES: { id: DealStage; label: string; color: string }[] = [
   { id: 'lead', label: 'Lead', color: 'bg-gray-100' },
@@ -15,15 +15,52 @@ const STAGES: { id: DealStage; label: string; color: string }[] = [
 ];
 
 export function CRMPipeline() {
-  const { deals, updateDealStage, addDeal, contacts, companies, platforms } = useCRM();
+  // Safely handle context - return null if not available (during hot reload)
+  let crmContext;
+  try {
+    crmContext = useCRM();
+  } catch {
+    return null;
+  }
+  
+  const { deals, updateDealStage, deleteDeal, addDeal, contacts, companies, platforms } = crmContext;
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newDeal, setNewDeal] = useState<Partial<Deal>>({ stage: 'lead', probability: 20 });
+  const [openMenuDealId, setOpenMenuDealId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Group deals by stage, then platform, then contact
+  const dealsByStageAndPlatformAndContact = useMemo(() => {
+    const grouped: Record<DealStage, Record<string, Record<string, Deal[]>>> = {
+      'lead': {}, 'contacted': {}, 'meeting': {}, 'proposal': {}, 
+      'negotiation': {}, 'closed-won': {}, 'closed-lost': {}
+    };
+    
+    deals.forEach(deal => {
+      if (grouped[deal.stage]) {
+        // Group by platform_id first
+        const platformKey = deal.platform_id || 'no-platform';
+        if (!grouped[deal.stage][platformKey]) {
+          grouped[deal.stage][platformKey] = {};
+        }
+        
+        // Then group by contact_id within platform
+        const contactKey = deal.contact_id || 'no-contact';
+        if (!grouped[deal.stage][platformKey][contactKey]) {
+          grouped[deal.stage][platformKey][contactKey] = [];
+        }
+        grouped[deal.stage][platformKey][contactKey].push(deal);
+      }
+    });
+    
+    return grouped;
+  }, [deals]);
 
   const dealsByStage = useMemo(() => {
     const grouped: Record<DealStage, Deal[]> = {
       'lead': [], 'contacted': [], 'meeting': [], 'proposal': [], 
-      'negotiation': [], 'closed-won': [], 'closed-lost': []
+      'negotiation': {}, 'closed-won': [], 'closed-lost': []
     };
     deals.forEach(deal => {
       if (grouped[deal.stage]) {
@@ -32,6 +69,56 @@ export function CRMPipeline() {
     });
     return grouped;
   }, [deals]);
+
+  // Calculate totals per platform
+  const platformTotals = useMemo(() => {
+    const totals: Record<string, { name: string; total: number }> = {};
+    
+    deals.forEach(deal => {
+      const platformId = deal.platform_id || 'no-platform';
+      const platformName = deal.platform?.name || 'No Platform';
+      
+      if (!totals[platformId]) {
+        totals[platformId] = { name: platformName, total: 0 };
+      }
+      totals[platformId].total += Number(deal.value) || 0;
+    });
+    
+    return Object.values(totals).sort((a, b) => b.total - a.total);
+  }, [deals]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuDealId(null);
+      }
+    };
+
+    if (openMenuDealId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openMenuDealId]);
+
+  const getNextStage = (currentStage: DealStage): DealStage | null => {
+    const stageOrder: DealStage[] = ['lead', 'contacted', 'meeting', 'proposal', 'negotiation', 'closed-won'];
+    const currentIndex = stageOrder.indexOf(currentStage);
+    if (currentIndex >= 0 && currentIndex < stageOrder.length - 1) {
+      return stageOrder[currentIndex + 1];
+    }
+    return null;
+  };
+
+  const handleMoveToNextStage = async (dealId: string, currentStage: DealStage) => {
+    const nextStage = getNextStage(currentStage);
+    if (nextStage) {
+      await updateDealStage(dealId, nextStage);
+      setOpenMenuDealId(null);
+    }
+  };
 
   const handleDragStart = (e: React.DragEvent, dealId: string) => {
     e.dataTransfer.setData('dealId', dealId);
@@ -75,8 +162,21 @@ export function CRMPipeline() {
       <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center shadow-sm z-10">
         <h2 className="font-[Lexend] text-[16px] font-bold">Sales Pipeline</h2>
         <div className="flex gap-4 items-center">
-          <div className="text-sm text-gray-500">
-            Total Value: <span className="font-bold text-gray-900">${deals.reduce((sum, d) => sum + (Number(d.value) || 0), 0).toLocaleString()}</span>
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            <div>
+              Total Value: <span className="font-bold text-gray-900">${deals.reduce((sum, d) => sum + (Number(d.value) || 0), 0).toLocaleString()}</span>
+            </div>
+            {platformTotals.length > 0 && (
+              <div className="flex items-center gap-3">
+                {platformTotals.map((platform, index) => (
+                  <div key={index} className="flex items-center gap-1">
+                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-600">{platform.name}:</span>
+                    <span className="font-semibold text-gray-900">${platform.total.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <button 
             onClick={() => setIsAddModalOpen(true)}
@@ -104,54 +204,151 @@ export function CRMPipeline() {
               </div>
               
               <div className="flex-1 p-2 space-y-3 overflow-y-auto">
-                {dealsByStage[stage.id].map(deal => (
-                  <div
-                    key={deal.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, deal.id)}
-                    className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 cursor-move hover:shadow-md transition-shadow group relative"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium text-gray-900 text-sm line-clamp-2">{deal.title}</h4>
-                      <button className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreHorizontal size={16} />
-                      </button>
-                    </div>
-                    
-                    <div className="flex items-center gap-1 text-[#FF4F00] font-bold text-sm mb-2">
-                      <DollarSign size={14} />
-                      {Number(deal.value).toLocaleString()}
-                    </div>
-
-                    <div className="space-y-1">
-                      {deal.company && (
-                        <p className="text-xs text-gray-500 flex items-center gap-1">
-                          🏢 {deal.company.name}
-                        </p>
-                      )}
-                      {deal.contact && (
-                        <p className="text-xs text-gray-500 flex items-center gap-1">
-                          👤 {deal.contact.first_name} {deal.contact.last_name}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="mt-3 flex justify-between items-center text-xs text-gray-400">
-                      <span>{deal.probability}% Prob.</span>
-                      {deal.expected_close_date && (
-                        <span>{format(new Date(deal.expected_close_date), 'MMM d')}</span>
-                      )}
-                    </div>
-                    
-                    {deal.platform && (
-                        <div className="mt-2 pt-2 border-t border-gray-50">
-                            <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200">
-                                {deal.platform.name}
-                            </span>
+                {Object.entries(dealsByStageAndPlatformAndContact[stage.id]).map(([platformKey, contactGroups]) => {
+                  // Get platform info from first deal
+                  const firstContactDeals = Object.values(contactGroups)[0];
+                  const platformDeal = firstContactDeals?.[0];
+                  const platformName = platformDeal?.platform?.name || 'No Platform';
+                  
+                  // Calculate total for this platform
+                  const platformTotal = Object.values(contactGroups).reduce((sum, deals) => {
+                    return sum + deals.reduce((dealSum, d) => dealSum + (Number(d.value) || 0), 0);
+                  }, 0);
+                  
+                  return (
+                    <div key={platformKey} className="bg-white/70 rounded-lg p-2 space-y-2">
+                      {/* Platform Header */}
+                      <div className="flex justify-between items-center px-1 pb-1 border-b border-gray-200">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                          <Layers size={12} className="text-[#FF4F00]" />
+                          <span className="truncate">{platformName}</span>
                         </div>
-                    )}
-                  </div>
-                ))}
+                        <div className="text-xs font-bold text-[#FF4F00]">
+                          ${platformTotal.toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      {/* Contact groups within platform */}
+                      {Object.entries(contactGroups).map(([contactKey, opportunityDeals]) => {
+                        const firstDeal = opportunityDeals[0];
+                        const totalValue = opportunityDeals.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
+                        const contactName = firstDeal.contact 
+                          ? `${firstDeal.contact.first_name} ${firstDeal.contact.last_name}`
+                          : 'No Contact';
+                        
+                        return (
+                          <div key={contactKey} className="bg-white/80 rounded-lg p-2 space-y-1.5">
+                            {/* Opportunity Header */}
+                            <div className="flex justify-between items-center mb-1 px-1">
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
+                                <User size={11} className="text-gray-400" />
+                                <span className="truncate">{contactName}</span>
+                              </div>
+                              <div className="text-xs font-bold text-[#FF4F00]">
+                                ${totalValue.toLocaleString()}
+                              </div>
+                            </div>
+                            
+                            {/* Deals in this opportunity */}
+                            {opportunityDeals.map(deal => {
+                              const nextStage = getNextStage(deal.stage);
+                              const nextStageLabel = nextStage ? STAGES.find(s => s.id === nextStage)?.label : null;
+                              
+                              return (
+                                <div
+                                  key={deal.id}
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, deal.id)}
+                                  className="bg-white p-2 rounded border border-gray-100 cursor-move hover:shadow-sm transition-shadow group relative"
+                                >
+                                  <div className="flex justify-between items-start gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-medium text-gray-900 text-xs line-clamp-1">{deal.title}</h4>
+                                    </div>
+                                    <div className="relative flex-shrink-0" ref={openMenuDealId === deal.id ? menuRef : null}>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOpenMenuDealId(openMenuDealId === deal.id ? null : deal.id);
+                                        }}
+                                        className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded"
+                                      >
+                                        <MoreHorizontal size={14} />
+                                      </button>
+                                      
+                                      {/* Dropdown Menu */}
+                                      {openMenuDealId === deal.id && (
+                                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-48 z-50">
+                                          {nextStageLabel && (
+                                            <button
+                                              onClick={() => handleMoveToNextStage(deal.id, deal.stage)}
+                                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                            >
+                                              <ChevronRight size={14} className="text-[#FF4F00]" />
+                                              Move to {nextStageLabel}
+                                            </button>
+                                          )}
+                                          <div className="border-t border-gray-100 my-1"></div>
+                                          <div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase">
+                                            Move to Stage
+                                          </div>
+                                          {STAGES.filter(s => s.id !== deal.stage && s.id !== 'closed-lost').map(s => (
+                                            <button
+                                              key={s.id}
+                                              onClick={async () => {
+                                                await updateDealStage(deal.id, s.id);
+                                                setOpenMenuDealId(null);
+                                              }}
+                                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                                            >
+                                              {s.label}
+                                            </button>
+                                          ))}
+                                          <div className="border-t border-gray-100 my-1"></div>
+                                          <button
+                                            onClick={async () => {
+                                              await updateDealStage(deal.id, 'closed-lost');
+                                              setOpenMenuDealId(null);
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                                          >
+                                            Mark as Lost
+                                          </button>
+                                          <div className="border-t border-gray-100 my-1"></div>
+                                          <button
+                                            onClick={async () => {
+                                              await deleteDeal(deal.id);
+                                              setOpenMenuDealId(null);
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                                          >
+                                            Delete Deal
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-1 text-[#FF4F00] font-bold text-xs mt-1">
+                                    <DollarSign size={12} />
+                                    {Number(deal.value).toLocaleString()}
+                                  </div>
+
+                                  <div className="mt-1.5 flex justify-between items-center text-[10px] text-gray-400">
+                                    <span>{deal.probability}% Prob.</span>
+                                    {deal.expected_close_date && (
+                                      <span>{format(new Date(deal.expected_close_date), 'MMM d')}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}

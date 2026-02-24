@@ -5,7 +5,15 @@ import { CheckCircle, Circle, Clock, Calendar, AlertCircle, Plus } from 'lucide-
 import { Activity, ActivityType } from '../../../types/crm';
 
 export function CRMActivities() {
-  const { activities, addActivity, completeActivity, contacts, deals } = useCRM();
+  // Safely handle context - return null if not available (during hot reload)
+  let crmContext;
+  try {
+    crmContext = useCRM();
+  } catch {
+    return null;
+  }
+  
+  const { activities, addActivity, completeActivity, contacts, deals, staff } = crmContext;
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'overdue' | 'completed'>('upcoming');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newActivity, setNewActivity] = useState<Partial<Activity>>({ type: 'task' });
@@ -107,6 +115,11 @@ export function CRMActivities() {
                   <span className="capitalize px-2 py-0.5 bg-gray-100 rounded text-xs">
                     {activity.type}
                   </span>
+                  {activity.owner && (
+                    <span className="text-xs flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded">
+                      👤 {activity.owner.name}
+                    </span>
+                  )}
                   {activity.contact_id && (
                     <span className="text-xs flex items-center gap-1">
                       👤 Contact ID: {activity.contact_id.substring(0, 8)}...
@@ -186,6 +199,20 @@ export function CRMActivities() {
                   <option value="">None</option>
                   {contacts.map(c => (
                     <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Assigned Staff</label>
+                <select 
+                  value={newActivity.owner_id || ''}
+                  onChange={e => setNewActivity({...newActivity, owner_id: e.target.value})}
+                  className="w-full p-2 border border-gray-200 rounded-lg"
+                >
+                  <option value="">None</option>
+                  {staff.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
               </div>
