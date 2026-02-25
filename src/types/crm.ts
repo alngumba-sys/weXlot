@@ -28,6 +28,7 @@ export interface Contact {
   job_title?: string;
   company_id?: string;
   company?: Company;
+  company_name?: string; // Simple text field for business name
   location?: string; // Added location field
   main_need?: string; // Custom field
   budget_range?: string; // Custom field

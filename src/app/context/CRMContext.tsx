@@ -41,12 +41,14 @@ interface CRMContextType {
   deleteStaff: (id: string) => Promise<void>;
   addContact: (contact: Omit<Contact, 'id' | 'created_at' | 'updated_at' | 'company'>) => Promise<Contact | null>;
   updateContact: (id: string, updates: Partial<Contact>) => Promise<Contact | null>;
+  deleteContact: (id: string) => Promise<void>;
   addCompany: (company: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => Promise<Company | null>;
   addDeal: (deal: Omit<Deal, 'id' | 'created_at' | 'updated_at' | 'contact' | 'company' | 'platform'>) => Promise<Deal | null>;
   updateDealStage: (id: string, stage: string) => Promise<void>;
   deleteDeal: (id: string) => Promise<void>;
   addActivity: (activity: Omit<Activity, 'id' | 'created_at' | 'completed_at'>) => Promise<Activity | null>;
   completeActivity: (id: string, completed: boolean) => Promise<void>;
+  updateActivity: (id: string, updates: Partial<Activity>) => Promise<void>;
   addPlatform: (name: string) => Promise<Platform | null>;
   updatePlatform: (id: string, name: string) => Promise<Platform | null>;
   deletePlatform: (id: string) => Promise<void>;
@@ -249,6 +251,96 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     }
   };
   
+  const deleteContact = async (id: string) => {
+    try {
+      console.log('[CRM] 🗑️ Starting contact deletion process for ID:', id);
+      
+      // First, let's check what we need to delete
+      console.log('[CRM] 📊 Checking for related records...');
+      const { data: relatedDeals } = await supabase
+        .from('deals')
+        .select('id, title')
+        .eq('contact_id', id);
+      console.log('[CRM] Found', relatedDeals?.length || 0, 'related deals:', relatedDeals);
+      
+      const { data: relatedActivities } = await supabase
+        .from('activities')
+        .select('id')
+        .eq('contact_id', id);
+      console.log('[CRM] Found', relatedActivities?.length || 0, 'related activities');
+      
+      const { data: relatedInteractions } = await supabase
+        .from('interactions')
+        .select('id')
+        .eq('contact_id', id);
+      console.log('[CRM] Found', relatedInteractions?.length || 0, 'related interactions');
+      
+      // Step 1: Delete all deals associated with this contact
+      console.log('[CRM] 🔄 Step 1: Deleting', relatedDeals?.length || 0, 'associated deals...');
+      const { data: deletedDeals, error: dealsError } = await supabase
+        .from('deals')
+        .delete()
+        .eq('contact_id', id)
+        .select();
+      
+      if (dealsError) {
+        console.error('[CRM] ❌ CRITICAL ERROR deleting deals:', dealsError);
+        throw new Error(`Failed to delete related deals: ${dealsError.message}`);
+      }
+      console.log('[CRM] ✅ Successfully deleted', deletedDeals?.length || 0, 'deals');
+      
+      // Step 2: Delete all activities associated with this contact
+      console.log('[CRM] 🔄 Step 2: Deleting', relatedActivities?.length || 0, 'associated activities...');
+      const { data: deletedActivities, error: activitiesError } = await supabase
+        .from('activities')
+        .delete()
+        .eq('contact_id', id)
+        .select();
+      
+      if (activitiesError) {
+        console.error('[CRM] ⚠️ Error deleting activities:', activitiesError);
+        // Continue - activities are optional
+      } else {
+        console.log('[CRM] ✅ Successfully deleted', deletedActivities?.length || 0, 'activities');
+      }
+      
+      // Step 3: Delete all interactions associated with this contact
+      console.log('[CRM] 🔄 Step 3: Deleting', relatedInteractions?.length || 0, 'associated interactions...');
+      const { data: deletedInteractions, error: interactionsError } = await supabase
+        .from('interactions')
+        .delete()
+        .eq('contact_id', id)
+        .select();
+      
+      if (interactionsError) {
+        console.error('[CRM] ⚠️ Error deleting interactions:', interactionsError);
+        // Continue - interactions are optional
+      } else {
+        console.log('[CRM] ✅ Successfully deleted', deletedInteractions?.length || 0, 'interactions');
+      }
+      
+      // Step 4: Finally delete the contact itself
+      console.log('[CRM] 🔄 Step 4: Deleting the contact itself...');
+      const { error: contactError } = await supabase
+        .from('contacts')
+        .delete()
+        .eq('id', id);
+      
+      if (contactError) {
+        console.error('[CRM] ❌ CRITICAL ERROR deleting contact:', contactError);
+        throw contactError;
+      }
+      
+      console.log('[CRM] ✅ Contact deleted successfully from Supabase DB!');
+      console.log('[CRM] 🔄 Refetching all data from database...');
+      await fetchData(); // Refetch everything from database
+      console.log('[CRM] ✅ Frontend state updated - contact removed!');
+    } catch (err) {
+      console.error('[CRM] ❌ Error deleting contact from database:', err);
+      throw err; // Re-throw so the UI can show an error
+    }
+  };
+  
   const addCompany = async (company: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       console.log('[CRM] Creating new company:', company);
@@ -306,8 +398,17 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   
   const addActivity = async (activity: Omit<Activity, 'id' | 'created_at' | 'completed_at'>) => {
       try {
-          console.log('[CRM] 📝 Creating new activity with data:', JSON.stringify(activity, null, 2));
-          const { data, error } = await supabase.from('activities').insert(activity).select('*, contact:contacts(*), deal:deals(*), owner:staff(*)').single();
+          // Clean the activity data - convert undefined to null for database
+          const cleanedActivity = {
+            ...activity,
+            contact_id: activity.contact_id || null,
+            deal_id: activity.deal_id || null,
+            owner_id: activity.owner_id || null,
+            due_date: activity.due_date || null
+          };
+          
+          console.log('[CRM] 📝 Creating new activity with data:', JSON.stringify(cleanedActivity, null, 2));
+          const { data, error } = await supabase.from('activities').insert(cleanedActivity).select('*, contact:contacts(*), deal:deals(*), owner:staff(*)').single();
           if (error) {
             console.error('[CRM] ❌ ERROR creating activity:', error);
             throw error;
@@ -338,6 +439,20 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       } catch (err) {
           console.error('Error completing activity:', err);
       }
+  };
+  
+  const updateActivity = async (id: string, updates: Partial<Activity>) => {
+    try {
+      console.log('[CRM] Updating activity:', id, updates);
+      const { data, error } = await supabase.from('activities').update(updates).eq('id', id).select('*, contact:contacts(*), deal:deals(*), owner:staff(*)').single();
+      if (error) throw error;
+      console.log('[CRM] Activity updated successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
+      return data;
+    } catch (err) {
+      console.error('Error updating activity:', err);
+      return null;
+    }
   };
   
   const addPlatform = async (name: string) => {
@@ -411,12 +526,14 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       deleteStaff,
       addContact,
       updateContact,
+      deleteContact,
       addCompany,
       addDeal,
       updateDealStage,
       deleteDeal,
       addActivity,
       completeActivity,
+      updateActivity,
       addPlatform,
       updatePlatform,
       deletePlatform,

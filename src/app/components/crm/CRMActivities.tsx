@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useCRM } from '../../context/CRMContext';
-import { format, isPast, isToday } from 'date-fns';
-import { CheckCircle, Circle, Clock, Calendar, AlertCircle, Plus } from 'lucide-react';
+import { format, isPast, isToday, subDays } from 'date-fns';
+import { CheckCircle, Circle, Clock, Calendar, AlertCircle, Plus, MoreVertical } from 'lucide-react';
 import { Activity, ActivityType } from '../../../types/crm';
 
 export function CRMActivities() {
@@ -10,6 +10,8 @@ export function CRMActivities() {
   const [newActivity, setNewActivity] = useState<Partial<Activity>>({ type: 'task' });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false);
 
   // Safely handle context - return null if not available (during hot reload)
   let crmContext;
@@ -19,7 +21,7 @@ export function CRMActivities() {
     return null;
   }
   
-  const { activities, addActivity, completeActivity, contacts, deals, staff } = crmContext;
+  const { activities, addActivity, completeActivity, updateActivity, contacts, deals, staff } = crmContext;
 
   const filteredActivities = activities.filter(activity => {
     if (filter === 'completed') return activity.completed;
@@ -43,15 +45,20 @@ export function CRMActivities() {
 
     try {
       console.log('[Activities] Submitting new activity:', newActivity);
-      const result = await addActivity({
+      
+      // Clean up data before submitting to database
+      const activityData = {
         type: newActivity.type as ActivityType || 'task',
-        description: newActivity.description,
-        due_date: newActivity.due_date,
+        description: newActivity.description.trim(),
+        due_date: newActivity.due_date || undefined,
         completed: false,
-        contact_id: newActivity.contact_id,
-        deal_id: newActivity.deal_id,
-        owner_id: newActivity.owner_id
-      });
+        contact_id: newActivity.contact_id || undefined,
+        deal_id: newActivity.deal_id || undefined,
+        owner_id: newActivity.owner_id || undefined
+      };
+      
+      console.log('[Activities] Cleaned activity data for DB:', activityData);
+      const result = await addActivity(activityData);
       
       if (!result) {
         console.error('[Activities] Failed to create activity - no data returned');
@@ -59,12 +66,91 @@ export function CRMActivities() {
         return;
       }
       
-      console.log('[Activities] Activity created successfully:', result);
+      console.log('[Activities] Activity created successfully in database:', result);
       setIsAddModalOpen(false);
       setNewActivity({ type: 'task' });
+      setSaveError(null);
     } catch (error: any) {
       console.error('[Activities] Exception while adding activity:', error);
       setSaveError(error?.message || 'Failed to add activity. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateActivity = async (activity: Activity) => {
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      console.log('[Activities] Submitting updated activity:', activity);
+      
+      // Clean up data before submitting to database
+      const activityData = {
+        type: activity.type as ActivityType || 'task',
+        description: activity.description.trim(),
+        due_date: activity.due_date || undefined,
+        completed: activity.completed,
+        contact_id: activity.contact_id || undefined,
+        deal_id: activity.deal_id || undefined,
+        owner_id: activity.owner_id || undefined
+      };
+      
+      console.log('[Activities] Cleaned activity data for DB:', activityData);
+      const result = await updateActivity(activity.id, activityData);
+      
+      if (!result) {
+        console.error('[Activities] Failed to update activity - no data returned');
+        setSaveError('Failed to update activity. Check console for details.');
+        return;
+      }
+      
+      console.log('[Activities] Activity updated successfully in database:', result);
+      setIsActionModalOpen(false);
+      setSaveError(null);
+    } catch (error: any) {
+      console.error('[Activities] Exception while updating activity:', error);
+      setSaveError(error?.message || 'Failed to update activity. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleMoveToOverdue = async () => {
+    if (!selectedActivity) return;
+    
+    setIsSaving(true);
+    try {
+      // Set due date to yesterday to make it overdue
+      const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+      await updateActivity(selectedActivity.id, { 
+        due_date: yesterday,
+        completed: false 
+      });
+      setIsActionModalOpen(false);
+      setSelectedActivity(null);
+    } catch (error: any) {
+      console.error('[Activities] Failed to move to overdue:', error);
+      setSaveError(error?.message || 'Failed to update activity.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleMarkCompleted = async () => {
+    if (!selectedActivity) return;
+    
+    setIsSaving(true);
+    try {
+      await updateActivity(selectedActivity.id, { 
+        completed: true,
+        completed_at: new Date().toISOString()
+      });
+      setIsActionModalOpen(false);
+      setSelectedActivity(null);
+    } catch (error: any) {
+      console.error('[Activities] Failed to mark as completed:', error);
+      setSaveError(error?.message || 'Failed to update activity.');
     } finally {
       setIsSaving(false);
     }
@@ -159,6 +245,15 @@ export function CRMActivities() {
                   )}
                 </div>
               </div>
+              <button 
+                onClick={() => {
+                  setSelectedActivity(activity);
+                  setIsActionModalOpen(true);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <MoreVertical size={20} />
+              </button>
             </div>
           ))}
           
@@ -210,7 +305,7 @@ export function CRMActivities() {
                   <input 
                     type="date"
                     value={newActivity.due_date || ''}
-                    onChange={e => setNewActivity({...newActivity, due_date: e.target.value})}
+                    onChange={e => setNewActivity({...newActivity, due_date: e.target.value || undefined})}
                     className="w-full p-2 border border-gray-200 rounded-lg" 
                   />
                 </div>
@@ -220,7 +315,7 @@ export function CRMActivities() {
                 <label className="block text-xs font-bold text-gray-500 mb-1">Related Contact</label>
                 <select 
                   value={newActivity.contact_id || ''}
-                  onChange={e => setNewActivity({...newActivity, contact_id: e.target.value})}
+                  onChange={e => setNewActivity({...newActivity, contact_id: e.target.value || undefined})}
                   className="w-full p-2 border border-gray-200 rounded-lg"
                 >
                   <option value="">None</option>
@@ -234,7 +329,7 @@ export function CRMActivities() {
                 <label className="block text-xs font-bold text-gray-500 mb-1">Assigned Staff</label>
                 <select 
                   value={newActivity.owner_id || ''}
-                  onChange={e => setNewActivity({...newActivity, owner_id: e.target.value})}
+                  onChange={e => setNewActivity({...newActivity, owner_id: e.target.value || undefined})}
                   className="w-full p-2 border border-gray-200 rounded-lg"
                 >
                   <option value="">None</option>
@@ -267,6 +362,60 @@ export function CRMActivities() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Action Modal */}
+      {isActionModalOpen && selectedActivity && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[150] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-bold text-lg">Activity Actions</h3>
+              <button onClick={() => setIsActionModalOpen(false)}><span className="text-2xl">&times;</span></button>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 mb-1">{selectedActivity.description}</h4>
+                <p className="text-sm text-gray-500">
+                  {selectedActivity.type} • {selectedActivity.due_date ? format(new Date(selectedActivity.due_date), 'MMM d, yyyy') : 'No due date'}
+                </p>
+              </div>
+
+              {saveError && (
+                <div className="text-red-500 text-sm mb-4">
+                  {saveError}
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <button
+                  onClick={handleMarkCompleted}
+                  disabled={isSaving || selectedActivity.completed}
+                  className="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                >
+                  <CheckCircle size={20} />
+                  {isSaving ? 'Processing...' : selectedActivity.completed ? 'Already Completed' : 'Mark as Completed'}
+                </button>
+
+                <button
+                  onClick={handleMoveToOverdue}
+                  disabled={isSaving || selectedActivity.completed}
+                  className="w-full px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                >
+                  <AlertCircle size={20} />
+                  {isSaving ? 'Processing...' : 'Move to Overdue'}
+                </button>
+
+                <button
+                  onClick={() => setIsActionModalOpen(false)}
+                  disabled={isSaving}
+                  className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

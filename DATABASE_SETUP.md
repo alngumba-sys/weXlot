@@ -52,11 +52,13 @@ CREATE TABLE IF NOT EXISTS contacts (
   last_name TEXT NOT NULL,
   email TEXT,
   phone TEXT,
-  job_title TEXT,
-  company_id UUID REFERENCES companies(id),
+  company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
+  company_name TEXT,
+  position TEXT,
   location TEXT,
-  main_need TEXT,
-  budget_range TEXT,
+  budget DECIMAL(15, 2),
+  timeline TEXT,
+  pain_points TEXT,
   decision_authority TEXT,
   notes TEXT,
   owner_id UUID REFERENCES staff(id),
@@ -75,14 +77,15 @@ CREATE TABLE IF NOT EXISTS platforms (
 CREATE TABLE IF NOT EXISTS deals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title TEXT NOT NULL,
-  value NUMERIC DEFAULT 0,
-  stage TEXT NOT NULL,
-  probability INTEGER DEFAULT 50,
-  expected_close_date DATE,
-  contact_id UUID REFERENCES contacts(id),
-  company_id UUID REFERENCES companies(id),
-  platform_id UUID REFERENCES platforms(id),
-  owner_id UUID REFERENCES staff(id),
+  value DECIMAL(15, 2),
+  stage TEXT DEFAULT 'lead',
+  contact_id UUID REFERENCES contacts(id) ON DELETE CASCADE,
+  company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
+  platform_id UUID REFERENCES platforms(id) ON DELETE SET NULL,
+  owner_id UUID REFERENCES staff(id) ON DELETE SET NULL,
+  close_date DATE,
+  probability INTEGER,
+  notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
 );
@@ -95,9 +98,9 @@ CREATE TABLE IF NOT EXISTS activities (
   due_date TIMESTAMP WITH TIME ZONE,
   completed BOOLEAN DEFAULT false,
   completed_at TIMESTAMP WITH TIME ZONE,
-  contact_id UUID REFERENCES contacts(id),
-  deal_id UUID REFERENCES deals(id),
-  owner_id UUID REFERENCES staff(id),
+  contact_id UUID REFERENCES contacts(id) ON DELETE CASCADE,
+  deal_id UUID REFERENCES deals(id) ON DELETE CASCADE,
+  owner_id UUID REFERENCES staff(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
 );
 
@@ -107,8 +110,8 @@ CREATE TABLE IF NOT EXISTS interactions (
   type TEXT NOT NULL,
   notes TEXT,
   date TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()),
-  contact_id UUID REFERENCES contacts(id),
-  deal_id UUID REFERENCES deals(id),
+  contact_id UUID REFERENCES contacts(id) ON DELETE CASCADE,
+  deal_id UUID REFERENCES deals(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
 );
 ```

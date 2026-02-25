@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCRM } from '../../context/CRMContext';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Trash2 } from 'lucide-react';
 import { Contact } from '../../../types/crm';
 
 export function CRMContacts() {
@@ -9,6 +9,8 @@ export function CRMContacts() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [newContact, setNewContact] = useState<Partial<Contact>>({});
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Safely handle context - return null if not available (during hot reload)
   let crmContext;
@@ -18,7 +20,7 @@ export function CRMContacts() {
     return null;
   }
   
-  const { contacts, addContact, loading } = crmContext;
+  const { contacts, addContact, deleteContact, loading } = crmContext;
 
   console.log('[CRMContacts] Rendering with', contacts?.length || 0, 'contacts, loading:', loading);
 
@@ -44,6 +46,7 @@ export function CRMContacts() {
         email: newContact.email,
         phone: newContact.phone,
         job_title: newContact.job_title,
+        company_name: newContact.company_name,
         location: newContact.location,
         main_need: newContact.main_need,
         budget_range: newContact.budget_range,
@@ -56,6 +59,19 @@ export function CRMContacts() {
       setSaveError('Failed to add contact. Please try again.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setIsDeleting(true);
+    try {
+      await deleteContact(id);
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error('Failed to delete contact:', error);
+      alert('Failed to delete contact. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -104,20 +120,23 @@ export function CRMContacts() {
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Pain Point / Notes
                 </th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider w-20">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {filteredContacts.map(contact => (
                 <tr 
                   key={contact.id}
-                  className="hover:bg-orange-50 transition-colors"
+                  className="hover:bg-orange-50 transition-colors group"
                 >
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="font-medium text-gray-900">{contact.first_name} {contact.last_name}</div>
                     <div className="text-xs text-gray-500">{contact.budget_range || 'N/A'}</div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                    {contact.company?.name || 'No Company'}
+                    {contact.company_name || contact.company?.name || 'No Company'}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                     {contact.phone || 'N/A'}
@@ -129,6 +148,15 @@ export function CRMContacts() {
                     <div className="max-w-xs truncate">
                       {contact.main_need || contact.notes || 'N/A'}
                     </div>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-center">
+                    <button
+                      onClick={() => setDeleteConfirm(contact.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                      title="Delete contact"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -205,10 +233,10 @@ export function CRMContacts() {
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Company</label>
                 <input 
-                  value={newContact.company_id || ''} // Should be a dropdown ideally
-                  onChange={e => setNewContact({...newContact, company_id: e.target.value})} // Placeholder for ID
+                  value={newContact.company_name || ''}
+                  onChange={e => setNewContact({...newContact, company_name: e.target.value})}
                   className="w-full p-2 border border-gray-200 rounded-lg" 
-                  placeholder="Company Name (Text for now)"
+                  placeholder="e.g. Acme Corp"
                 />
               </div>
 
@@ -284,6 +312,33 @@ export function CRMContacts() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[150] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="font-bold text-lg mb-4">Delete Contact</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this contact? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => handleDelete(deleteConfirm)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}

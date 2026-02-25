@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { 
   Scissors, 
@@ -27,8 +27,8 @@ const salesUpLogo = "data:image/svg+xml,%3Csvg width='200' height='80' viewBox='
 const wexlotLogoNew = "data:image/svg+xml,%3Csvg width='150' height='50' viewBox='0 0 150 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 15 L35 40 L50 15 M50 15 L65 40 L80 15' stroke='%23023E8A' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Ccircle cx='95' cy='15' r='5' fill='%23FF4F00'/%3E%3Ctext x='105' y='38' font-family='sans-serif' font-size='24' font-weight='bold' fill='%23023E8A'%3EXlot%3C/text%3E%3C/svg%3E";
 const wexlotLogoWhite = "data:image/svg+xml,%3Csvg width='150' height='50' viewBox='0 0 150 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 15 L35 40 L50 15 M50 15 L65 40 L80 15' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Ccircle cx='95' cy='15' r='5' fill='%23FF4F00'/%3E%3Ctext x='105' y='38' font-family='sans-serif' font-size='24' font-weight='bold' fill='white'%3EXlot%3C/text%3E%3C/svg%3E";
 
-// Lazy load AdminPanel - only loads when needed (saves ~50KB on initial load)
-const AdminPanel = lazy(() => import('./AdminPanel').then(module => ({ default: module.AdminPanel })));
+// Import AdminPanel directly instead of lazy loading to avoid dynamic import issues
+import { AdminPanel } from './AdminPanel';
 
 const leftColumnData = [
   { icon: Scissors, title: "New Appointment", value: "Today, 10:00 AM", color: "text-orange-400" },
@@ -239,16 +239,14 @@ export default function AppWithAdmin() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#FDF8E8]">
-      {/* Admin Panel - Lazy loaded */}
+      {/* Admin Panel */}
       {isAdminOpen && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"><div className="text-white">Loading...</div></div>}>
-          <AdminPanel 
-            isOpen={isAdminOpen}
-            onClose={() => setIsAdminOpen(false)}
-            onImagesUpdated={handleImagesUpdated}
-            currentImages={images}
-          />
-        </Suspense>
+        <AdminPanel 
+          isOpen={isAdminOpen}
+          onClose={() => setIsAdminOpen(false)}
+          onImagesUpdated={handleImagesUpdated}
+          currentImages={images}
+        />
       )}
 
       {/* Header */}
