@@ -265,39 +265,42 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const addDeal = async (deal: Omit<Deal, 'id' | 'created_at' | 'updated_at' | 'contact' | 'company' | 'platform'>) => {
     try {
-      console.log('[CRM] Creating new deal:', deal);
+      console.log('[CRM] 💰 Creating new deal in database:', deal);
       const { data, error } = await supabase.from('deals').insert(deal).select('*, contact:contacts(*), company:companies(*), platform:platforms(*), owner:staff(*)').single();
       if (error) throw error;
-      console.log('[CRM] Deal created successfully, refetching all data from database...');
+      console.log('[CRM] ✅ Deal created successfully in Supabase DB! ID:', data.id);
+      console.log('[CRM] 🔄 Refetching all data from database...');
       await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
-      console.error('[CRM] Error adding deal:', err);
+      console.error('[CRM] ❌ Error adding deal to database:', err);
       return null;
     }
   };
 
   const updateDealStage = async (id: string, stage: string) => {
     try {
-      console.log('[CRM] Updating deal stage:', id, 'to', stage);
+      console.log('[CRM] 🔄 Updating deal stage in database:', id, '→', stage);
       const { error } = await supabase.from('deals').update({ stage }).eq('id', id);
       if (error) throw error;
-      console.log('[CRM] Deal stage updated successfully, refetching all data from database...');
+      console.log('[CRM] ✅ Deal stage updated successfully in Supabase DB!');
+      console.log('[CRM] 🔄 Refetching all data from database...');
       await fetchData(); // Refetch everything from database
     } catch (err) {
-      console.error('Error updating deal stage:', err);
+      console.error('[CRM] ❌ Error updating deal stage in database:', err);
     }
   };
   
   const deleteDeal = async (id: string) => {
     try {
-      console.log('[CRM] Deleting deal:', id);
+      console.log('[CRM] 🗑️ Deleting deal from database:', id);
       const { error } = await supabase.from('deals').delete().eq('id', id);
       if (error) throw error;
-      console.log('[CRM] Deal deleted successfully, refetching all data from database...');
+      console.log('[CRM] ✅ Deal deleted successfully from Supabase DB!');
+      console.log('[CRM] 🔄 Refetching all data from database...');
       await fetchData(); // Refetch everything from database
     } catch (err) {
-      console.error('Error deleting deal:', err);
+      console.error('[CRM] ❌ Error deleting deal from database:', err);
     }
   };
   
