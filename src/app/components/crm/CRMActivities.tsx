@@ -13,15 +13,13 @@ export function CRMActivities() {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
 
-  // Safely handle context - return null if not available (during hot reload)
-  let crmContext;
-  try {
-    crmContext = useCRM();
-  } catch {
-    return null;
-  }
-  
-  const { activities, addActivity, completeActivity, updateActivity, contacts, deals, staff } = crmContext;
+  console.log('[CRMActivities] Component rendering...');
+
+  // Get CRM context
+  const crmContext = useCRM();
+  const { activities, addActivity, completeActivity, updateActivity, contacts, deals, staff, loading } = crmContext;
+
+  console.log('[CRMActivities] Activities loaded:', activities.length, 'Loading:', loading);
 
   const filteredActivities = activities.filter(activity => {
     if (filter === 'completed') return activity.completed;
@@ -97,15 +95,9 @@ export function CRMActivities() {
       };
       
       console.log('[Activities] Cleaned activity data for DB:', activityData);
-      const result = await updateActivity(activity.id, activityData);
+      await updateActivity(activity.id, activityData);
       
-      if (!result) {
-        console.error('[Activities] Failed to update activity - no data returned');
-        setSaveError('Failed to update activity. Check console for details.');
-        return;
-      }
-      
-      console.log('[Activities] Activity updated successfully in database:', result);
+      console.log('[Activities] Activity updated successfully in database');
       setIsActionModalOpen(false);
       setSaveError(null);
     } catch (error: any) {
@@ -120,9 +112,11 @@ export function CRMActivities() {
     if (!selectedActivity) return;
     
     setIsSaving(true);
+    setSaveError(null);
     try {
       // Set due date to yesterday to make it overdue
       const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+      console.log('[Activities] Moving to overdue with date:', yesterday);
       await updateActivity(selectedActivity.id, { 
         due_date: yesterday,
         completed: false 
@@ -141,7 +135,9 @@ export function CRMActivities() {
     if (!selectedActivity) return;
     
     setIsSaving(true);
+    setSaveError(null);
     try {
+      console.log('[Activities] Marking as completed:', selectedActivity.id);
       await updateActivity(selectedActivity.id, { 
         completed: true,
         completed_at: new Date().toISOString()
@@ -157,8 +153,8 @@ export function CRMActivities() {
   };
 
   return (
-    <div className="h-full bg-gray-50 flex flex-col">
-      <div className="p-6 border-b border-gray-200 bg-white flex justify-between items-center shadow-sm">
+    <div className="h-full bg-gray-50 flex flex-col relative">
+      <div className="p-6 border-b border-gray-200 bg-white flex justify-between items-center shadow-sm relative z-10">
         <div>
           <h2 className="text-xl font-bold font-[Lexend]">My Activities</h2>
           <p className="text-xs text-gray-400 mt-1">
@@ -193,27 +189,27 @@ export function CRMActivities() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 relative z-0">
         <div className="space-y-3">
           {filteredActivities.map(activity => (
             <div 
               key={activity.id}
-              className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-start gap-4 hover:shadow-md transition-shadow ${activity.completed ? 'opacity-50' : ''}`}
+              className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-start gap-4 hover:shadow-md transition-shadow relative ${activity.completed ? 'opacity-50' : ''}`}
             >
               <button 
                 onClick={() => completeActivity(activity.id, !activity.completed)}
-                className={`mt-1 flex-shrink-0 ${activity.completed ? 'text-green-500' : 'text-gray-300 hover:text-green-500'}`}
+                className={`mt-1 flex-shrink-0 z-10 ${activity.completed ? 'text-green-500' : 'text-gray-300 hover:text-green-500'}`}
               >
                 {activity.completed ? <CheckCircle size={24} /> : <Circle size={24} />}
               </button>
               
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-4">
                   <h3 className={`font-medium text-gray-900 ${activity.completed ? 'line-through' : ''}`}>
                     {activity.description}
                   </h3>
                   {activity.due_date && (
-                    <span className={`text-xs flex items-center gap-1 ${
+                    <span className={`text-xs flex items-center gap-1 flex-shrink-0 ${
                       !activity.completed && isPast(new Date(activity.due_date)) && !isToday(new Date(activity.due_date)) 
                         ? 'text-red-600 font-bold' 
                         : 'text-gray-400'
@@ -224,7 +220,7 @@ export function CRMActivities() {
                   )}
                 </div>
                 
-                <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                <div className="flex gap-4 mt-2 text-sm text-gray-500 flex-wrap">
                   <span className="capitalize px-2 py-0.5 bg-gray-100 rounded text-xs">
                     {activity.type}
                   </span>
@@ -250,7 +246,8 @@ export function CRMActivities() {
                   setSelectedActivity(activity);
                   setIsActionModalOpen(true);
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 flex-shrink-0 p-1 z-10 relative"
+                aria-label="Activity actions"
               >
                 <MoreVertical size={20} />
               </button>

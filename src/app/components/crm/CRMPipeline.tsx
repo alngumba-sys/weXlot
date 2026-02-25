@@ -5,19 +5,19 @@ import { format } from 'date-fns';
 import { MoreHorizontal, Plus, DollarSign, ChevronRight, Trash2, User, Layers } from 'lucide-react';
 
 const STAGES: { id: DealStage; label: string; color: string }[] = [
-  { id: 'lead', label: 'Lead', color: 'bg-gray-100' },
-  { id: 'contacted', label: 'Contacted', color: 'bg-blue-50' },
-  { id: 'meeting', label: 'Meeting', color: 'bg-purple-50' },
-  { id: 'proposal', label: 'Proposal', color: 'bg-yellow-50' },
-  { id: 'negotiation', label: 'Negotiation', color: 'bg-orange-50' },
-  { id: 'closed-won', label: 'Won', color: 'bg-green-50' },
+  { id: 'planned-visit', label: 'Planned to visit', color: 'bg-gray-100' },
+  { id: 'first-contact', label: 'First contact established', color: 'bg-blue-50' },
+  { id: 'decision-maker', label: 'Decision maker stage', color: 'bg-purple-50' },
+  { id: 'demo', label: 'Demo stage', color: 'bg-yellow-50' },
+  { id: 'decision', label: 'Decision stage', color: 'bg-orange-50' },
+  { id: 'closed-won', label: 'Won (Pilot Stage)', color: 'bg-green-50' },
   { id: 'closed-lost', label: 'Lost', color: 'bg-red-50' },
 ];
 
 export function CRMPipeline() {
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newDeal, setNewDeal] = useState<Partial<Deal>>({ stage: 'lead', probability: 20 });
+  const [newDeal, setNewDeal] = useState<Partial<Deal>>({ stage: 'planned-visit', probability: 20 });
   const [openMenuDealId, setOpenMenuDealId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -38,8 +38,8 @@ export function CRMPipeline() {
   // Group deals by stage, then platform, then contact
   const dealsByStageAndPlatformAndContact = useMemo(() => {
     const grouped: Record<DealStage, Record<string, Record<string, Deal[]>>> = {
-      'lead': {}, 'contacted': {}, 'meeting': {}, 'proposal': {}, 
-      'negotiation': {}, 'closed-won': {}, 'closed-lost': {}
+      'planned-visit': {}, 'first-contact': {}, 'decision-maker': {}, 'demo': {}, 
+      'decision': {}, 'closed-won': {}, 'closed-lost': {}
     };
     
     deals.forEach(deal => {
@@ -64,8 +64,8 @@ export function CRMPipeline() {
 
   const dealsByStage = useMemo(() => {
     const grouped: Record<DealStage, Deal[]> = {
-      'lead': [], 'contacted': [], 'meeting': [], 'proposal': [], 
-      'negotiation': {}, 'closed-won': [], 'closed-lost': []
+      'planned-visit': [], 'first-contact': [], 'decision-maker': [], 'demo': [], 
+      'decision': [], 'closed-won': [], 'closed-lost': []
     };
     deals.forEach(deal => {
       if (grouped[deal.stage]) {
@@ -109,7 +109,7 @@ export function CRMPipeline() {
   }, [openMenuDealId]);
 
   const getNextStage = (currentStage: DealStage): DealStage | null => {
-    const stageOrder: DealStage[] = ['lead', 'contacted', 'meeting', 'proposal', 'negotiation', 'closed-won'];
+    const stageOrder: DealStage[] = ['planned-visit', 'first-contact', 'decision-maker', 'demo', 'decision', 'closed-won'];
     const currentIndex = stageOrder.indexOf(currentStage);
     if (currentIndex >= 0 && currentIndex < stageOrder.length - 1) {
       return stageOrder[currentIndex + 1];
@@ -154,7 +154,7 @@ export function CRMPipeline() {
       await addDeal({
         title: newDeal.title,
         value: Number(newDeal.value),
-        stage: newDeal.stage as DealStage || 'lead',
+        stage: newDeal.stage as DealStage || 'planned-visit',
         probability: Number(newDeal.probability),
         expected_close_date: newDeal.expected_close_date,
         contact_id: newDeal.contact_id,
@@ -163,7 +163,7 @@ export function CRMPipeline() {
         owner_id: newDeal.owner_id
       });
       setIsAddModalOpen(false);
-      setNewDeal({ stage: 'lead', probability: 20 });
+      setNewDeal({ stage: 'planned-visit', probability: 20 });
     } catch (error) {
       setSaveError('Failed to create deal. Please try again.');
     } finally {
@@ -306,19 +306,35 @@ export function CRMPipeline() {
                                           <div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase">
                                             Move to Stage
                                           </div>
-                                          {STAGES.filter(s => s.id !== deal.stage && s.id !== 'closed-lost').map(s => (
+                                          {STAGES.filter(s => s.id !== 'closed-lost' && s.id !== 'closed-won').map(s => (
                                             <button
                                               key={s.id}
                                               onClick={async () => {
-                                                await updateDealStage(deal.id, s.id);
-                                                setOpenMenuDealId(null);
+                                                if (s.id !== deal.stage) {
+                                                  await updateDealStage(deal.id, s.id);
+                                                  setOpenMenuDealId(null);
+                                                }
                                               }}
-                                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                                              disabled={s.id === deal.stage}
+                                              className={`w-full px-4 py-2 text-left text-sm ${
+                                                s.id === deal.stage 
+                                                  ? 'text-gray-400 bg-gray-50 cursor-not-allowed' 
+                                                  : 'text-gray-700 hover:bg-gray-50'
+                                              }`}
                                             >
-                                              {s.label}
+                                              {s.label} {s.id === deal.stage && '(current)'}
                                             </button>
                                           ))}
                                           <div className="border-t border-gray-100 my-1"></div>
+                                          <button
+                                            onClick={async () => {
+                                              await updateDealStage(deal.id, 'closed-won');
+                                              setOpenMenuDealId(null);
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50"
+                                          >
+                                            Mark as Won
+                                          </button>
                                           <button
                                             onClick={async () => {
                                               await updateDealStage(deal.id, 'closed-lost');

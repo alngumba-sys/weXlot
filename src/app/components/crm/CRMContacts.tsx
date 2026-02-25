@@ -105,20 +105,23 @@ export function CRMContacts() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[180px]">
                   Name
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[160px]">
                   Business Name
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[140px]">
                   Phone Number
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[160px]">
                   Location
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                  Pain Point / Notes
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[220px]">
+                  Pain Point
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[220px]">
+                  Notes
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider w-20">
                   Actions
@@ -131,25 +134,30 @@ export function CRMContacts() {
                   key={contact.id}
                   className="hover:bg-orange-50 transition-colors group"
                 >
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">{contact.first_name} {contact.last_name}</div>
-                    <div className="text-xs text-gray-500">{contact.budget_range || 'N/A'}</div>
+                  <td className="px-4 py-4 align-top">
+                    <div className="font-medium text-gray-900 leading-tight">{contact.first_name} {contact.last_name}</div>
+                    <div className="text-xs text-gray-500 mt-1">{contact.budget_range || 'N/A'}</div>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  <td className="px-4 py-4 text-sm text-gray-700 align-top">
                     {contact.company_name || contact.company?.name || 'No Company'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  <td className="px-4 py-4 text-sm text-gray-700 align-top">
                     {contact.phone || 'N/A'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  <td className="px-4 py-4 text-sm text-gray-700 align-top">
                     {contact.location || 'N/A'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    <div className="max-w-xs truncate">
-                      {contact.main_need || contact.notes || 'N/A'}
+                  <td className="px-4 py-4 text-sm text-gray-700 align-top">
+                    <div className="whitespace-normal break-words text-[12px]">
+                      {contact.main_need || 'N/A'}
                     </div>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-center">
+                  <td className="px-4 py-4 text-sm text-gray-700 align-top">
+                    <div className="whitespace-normal break-words text-[12px]">
+                      {contact.notes || 'N/A'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 text-center align-top">
                     <button
                       onClick={() => setDeleteConfirm(contact.id)}
                       className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"

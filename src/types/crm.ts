@@ -45,7 +45,7 @@ export interface Platform {
   created_at: string;
 }
 
-export type DealStage = 'lead' | 'contacted' | 'meeting' | 'proposal' | 'negotiation' | 'closed-won' | 'closed-lost';
+export type DealStage = 'planned-visit' | 'first-contact' | 'decision-maker' | 'demo' | 'decision' | 'closed-won' | 'closed-lost';
 
 export interface Deal {
   id: string;

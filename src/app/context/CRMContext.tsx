@@ -448,10 +448,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       console.log('[CRM] Activity updated successfully, refetching all data from database...');
       await fetchData(); // Refetch everything from database
-      return data;
     } catch (err) {
       console.error('Error updating activity:', err);
-      return null;
     }
   };
   
