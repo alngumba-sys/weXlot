@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   phone TEXT,
   job_title TEXT,
   company_id UUID REFERENCES companies(id),
+  location TEXT,
   main_need TEXT,
   budget_range TEXT,
   decision_authority TEXT,

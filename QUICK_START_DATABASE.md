@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   phone TEXT,
   job_title TEXT,
   company_id UUID REFERENCES companies(id),
+  location TEXT,
   main_need TEXT,
   budget_range TEXT,
   decision_authority TEXT,
@@ -257,7 +258,7 @@ LEFT JOIN platforms p ON d.platform_id = p.id;
 ## 🆘 Troubleshooting
 
 ### "Table 'contacts' does not exist"
-→ You need to run Step 2 SQL again
+��� You need to run Step 2 SQL again
 
 ### "Permission denied for table contacts"  
 → Run the RLS policies part of Step 2 SQL again
