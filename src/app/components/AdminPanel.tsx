@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { uploadImage, IMAGE_KEYS, ImageKey } from '../../lib/supabase';
-import { X, Upload, CheckCircle, AlertCircle, LayoutDashboard, Trello, Users, Calendar, Settings, Image as ImageIcon, LogOut, Eye, EyeOff } from 'lucide-react';
+import { X, Upload, CheckCircle, AlertCircle, LayoutDashboard, Trello, Users, Calendar, Settings, Image as ImageIcon, LogOut, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { CRMProvider } from '../context/CRMContext';
 import { CRMDashboard } from './crm/CRMDashboard';
 import { CRMPipeline } from './crm/CRMPipeline';
 import { CRMContacts } from './crm/CRMContacts';
 import { CRMActivities } from './crm/CRMActivities';
+import { CRMIncidents } from './crm/CRMIncidents';
 import { CRMSettings } from './crm/CRMSettings';
 import { QuickAddLead } from './crm/QuickAddLead';
 
@@ -27,7 +28,7 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pipeline' | 'contacts' | 'activities' | 'cms' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pipeline' | 'contacts' | 'activities' | 'incidents' | 'cms' | 'settings'>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Image Upload State
@@ -231,6 +232,14 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                     <span className="font-medium text-[15px]">Activities</span>
                   </button>
 
+                  <button 
+                    onClick={() => { setActiveTab('incidents'); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'incidents' ? 'bg-[#FF4F00] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                  >
+                    <AlertTriangle size={20} />
+                    <span className="font-medium text-[15px]">Incidents</span>
+                  </button>
+
                   <div className="pt-4 mt-4 border-t border-gray-800">
                     <p className="px-4 text-xs font-bold text-gray-500 uppercase mb-2">System</p>
                     
@@ -277,6 +286,7 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                 {activeTab === 'pipeline' && <CRMPipeline />}
                 {activeTab === 'contacts' && <CRMContacts />}
                 {activeTab === 'activities' && <CRMActivities />}
+                {activeTab === 'incidents' && <CRMIncidents />}
                 {activeTab === 'settings' && <CRMSettings />}
                 
                 {activeTab === 'cms' && (

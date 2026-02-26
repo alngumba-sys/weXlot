@@ -77,6 +77,7 @@ export default function AppWithAdmin() {
 
   // State for images - Initialize with default images
   const [images, setImages] = useState(defaultImages);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   // Load images from Supabase on mount
   useEffect(() => {
@@ -103,6 +104,7 @@ export default function AppWithAdmin() {
     
     console.log('[' + new Date().toLocaleTimeString() + '] Setting images state to:', newImages);
     setImages(newImages);
+    setImagesLoaded(true);
   };
 
   const [flashingLogo, setFlashingLogo] = useState<string | null>(null);
@@ -520,13 +522,14 @@ export default function AppWithAdmin() {
           className="cursor-pointer focus:outline-none p-3 -m-3 hover:opacity-80 transition-opacity relative z-20"
           aria-label="WeXlot Logo - Click to open admin"
         >
-          <ImageWithFallback 
-            key={images.logo}
-            src={images.logo}
-            alt="WeXlot Logo"
-            className="w-[50px] sm:w-[60px] md:w-[67px] h-auto pointer-events-none"
-            loading="eager"
-          />
+          {imagesLoaded && (
+            <ImageWithFallback 
+              src={images.logo}
+              alt="WeXlot Logo"
+              className="w-[50px] sm:w-[60px] md:w-[67px] h-auto pointer-events-none"
+              loading="eager"
+            />
+          )}
         </button>
       </div>
 
@@ -542,15 +545,16 @@ export default function AppWithAdmin() {
 
         {/* Workspace Image - Shows on mobile only (below text) */}
         <div className="w-full max-w-2xl mb-8 lg:hidden">
-          <ImageWithFallback 
-            key={images.workspaceImage}
-            src={images.workspaceImage}
-            alt="Business platform dashboard"
-            className="w-full h-auto object-contain rounded-lg opacity-55"
-            loading="eager"
-            width={672}
-            height={378}
-          />
+          {imagesLoaded && (
+            <ImageWithFallback 
+              src={images.workspaceImage}
+              alt="Business platform dashboard"
+              className="w-full h-auto object-contain rounded-lg opacity-55"
+              loading="eager"
+              width={672}
+              height={378}
+            />
+          )}
         </div>
 
         {/* Content Section with Logo and Image */}
@@ -636,15 +640,16 @@ export default function AppWithAdmin() {
 
           {/* Center - Workspace Image (Desktop only - positioned in center) */}
           <div className="hidden lg:block flex-1 relative min-h-[400px]">
-            <ImageWithFallback 
-              key={images.workspaceImage}
-              src={images.workspaceImage}
-              alt="Business platform dashboard"
-              className="w-[115%] h-auto object-contain rounded-lg opacity-55 absolute left-1/2 -translate-x-1/2 top-8"
-              loading="eager"
-              width={1080}
-              height={600}
-            />
+            {imagesLoaded && (
+              <ImageWithFallback 
+                src={images.workspaceImage}
+                alt="Business platform dashboard"
+                className="w-[115%] h-auto object-contain rounded-lg opacity-55 absolute left-1/2 -translate-x-1/2 top-8"
+                loading="eager"
+                width={1080}
+                height={600}
+              />
+            )}
           </div>
 
           {/* Right Side - TillsUp and PillsUp */}
@@ -778,15 +783,16 @@ export default function AppWithAdmin() {
               </div>
               
               {/* Centered Image */}
-              <ImageWithFallback 
-                key={images.philosophyImage}
-                src={images.philosophyImage}
-                alt="Creative thinking and innovation"
-                className="w-full max-w-[250px] sm:max-w-[280px] md:max-w-[320px] h-auto object-contain opacity-50 flex-shrink-0 mx-auto lg:mx-0"
-                loading="lazy"
-                width={320}
-                height={213}
-              />
+              {imagesLoaded && (
+                <ImageWithFallback 
+                  src={images.philosophyImage}
+                  alt="Creative thinking and innovation"
+                  className="w-full max-w-[250px] sm:max-w-[280px] md:max-w-[320px] h-auto object-contain opacity-50 flex-shrink-0 mx-auto lg:mx-0"
+                  loading="lazy"
+                  width={320}
+                  height={213}
+                />
+              )}
               
               {/* Approach */}
               <div className="flex-1 max-w-md">

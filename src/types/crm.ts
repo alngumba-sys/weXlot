@@ -91,3 +91,25 @@ export interface Interaction {
   deal_id?: string;
   created_at: string;
 }
+
+export type IncidentStatus = 'ongoing' | 'resolved';
+export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export interface Incident {
+  id: string;
+  title: string;
+  description: string;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  reported_by?: string; // Staff ID
+  reporter?: Staff; // Join
+  assigned_to?: string; // Staff ID
+  assignee?: Staff; // Join
+  contact_id?: string;
+  contact?: Contact; // Join
+  platform_id?: string;
+  platform?: Platform; // Join
+  resolved_at?: string;
+  created_at: string;
+  updated_at: string;
+}

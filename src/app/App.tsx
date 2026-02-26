@@ -1,5 +1,6 @@
 import '../styles/index.css';
 import AppWithAdmin from './components/AppWithAdmin';
+import { Favicon } from './components/Favicon';
 import { useEffect } from 'react';
 
 export default function App() {
@@ -24,5 +25,10 @@ export default function App() {
     document.head.appendChild(fontsGstaticPreconnect);
   }, []);
 
-  return <AppWithAdmin />;
+  return (
+    <>
+      <Favicon />
+      <AppWithAdmin />
+    </>
+  );
 }

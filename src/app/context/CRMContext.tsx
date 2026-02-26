@@ -20,7 +20,7 @@
  * - All dashboard metrics reflect live database state
  */
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Staff, Contact, Company, Deal, Activity, Interaction, Platform } from '../../types/crm';
+import { Staff, Contact, Company, Deal, Activity, Interaction, Platform, Incident } from '../../types/crm';
 import { supabase } from '../../lib/supabase';
 
 interface CRMContextType {
@@ -31,6 +31,7 @@ interface CRMContextType {
   activities: Activity[];
   interactions: Interaction[];
   platforms: Platform[];
+  incidents: Incident[];
   loading: boolean;
   error: string | null;
   refreshData: () => Promise<void>;
@@ -53,6 +54,9 @@ interface CRMContextType {
   updatePlatform: (id: string, name: string) => Promise<Platform | null>;
   deletePlatform: (id: string) => Promise<void>;
   addInteraction: (interaction: Omit<Interaction, 'id' | 'created_at'>) => Promise<Interaction | null>;
+  addIncident: (incident: Omit<Incident, 'id' | 'created_at' | 'updated_at' | 'reporter' | 'assignee' | 'contact' | 'platform'>) => Promise<Incident | null>;
+  updateIncident: (id: string, updates: Partial<Incident>) => Promise<void>;
+  deleteIncident: (id: string) => Promise<void>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
@@ -65,6 +69,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +91,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         { data: dealsData },
         { data: activitiesData },
         { data: interactionsData },
-        { data: platformsData }
+        { data: platformsData },
+        { data: incidentsData }
       ] = await Promise.all([
         supabase.from('staff').select('*'),
         supabase.from('contacts').select('*, company:companies(*), owner:staff(*)'),
@@ -94,7 +100,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         supabase.from('deals').select('*, contact:contacts(*), company:companies(*), platform:platforms(*), owner:staff(*)'),
         supabase.from('activities').select('*, contact:contacts(*), deal:deals(*), owner:staff(*)').order('due_date', { ascending: true }),
         supabase.from('interactions').select('*').order('date', { ascending: false }),
-        supabase.from('platforms').select('*')
+        supabase.from('platforms').select('*'),
+        supabase.from('incidents').select('*, reporter:staff(*), assignee:staff(*), contact:contacts(*), platform:platforms(*)').order('created_at', { ascending: false })
       ]);
 
       console.log(`[CRM ${timestamp}] ✓ Successfully fetched from Supabase:`, {
@@ -104,7 +111,8 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         deals: dealsData?.length || 0,
         activities: activitiesData?.length || 0,
         interactions: interactionsData?.length || 0,
-        platforms: platformsData?.length || 0
+        platforms: platformsData?.length || 0,
+        incidents: incidentsData?.length || 0
       });
 
       setStaff(staffData || []);
@@ -114,6 +122,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       setActivities(activitiesData || []);
       setInteractions(interactionsData || []);
       setPlatforms(platformsData || []);
+      setIncidents(incidentsData || []);
       
       console.log('[CRM] Successfully loaded all data from Supabase');
     } catch (err: any) {
@@ -173,6 +182,14 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       })
       .subscribe();
 
+    const incidentsSubscription = supabase
+      .channel('incidents-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'incidents' }, () => {
+        console.log('Incidents data changed, refreshing...');
+        fetchData();
+      })
+      .subscribe();
+
     // Cleanup subscriptions on unmount
     return () => {
       staffSubscription.unsubscribe();
@@ -180,6 +197,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       dealsSubscription.unsubscribe();
       activitiesSubscription.unsubscribe();
       platformsSubscription.unsubscribe();
+      incidentsSubscription.unsubscribe();
     };
   }, []);
 
@@ -511,6 +529,44 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addIncident = async (incident: Omit<Incident, 'id' | 'created_at' | 'updated_at' | 'reporter' | 'assignee' | 'contact' | 'platform'>) => {
+    try {
+      console.log('[CRM] Creating new incident:', incident);
+      const { data, error } = await supabase.from('incidents').insert(incident).select('*, reporter:staff(*), assignee:staff(*), contact:contacts(*), platform:platforms(*)').single();
+      if (error) throw error;
+      console.log('[CRM] Incident created successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
+      return data;
+    } catch (err) {
+      console.error('Error adding incident:', err);
+      return null;
+    }
+  };
+
+  const updateIncident = async (id: string, updates: Partial<Incident>) => {
+    try {
+      console.log('[CRM] Updating incident:', id, updates);
+      const { data, error } = await supabase.from('incidents').update(updates).eq('id', id).select('*, reporter:staff(*), assignee:staff(*), contact:contacts(*), platform:platforms(*)').single();
+      if (error) throw error;
+      console.log('[CRM] Incident updated successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
+    } catch (err) {
+      console.error('Error updating incident:', err);
+    }
+  };
+
+  const deleteIncident = async (id: string) => {
+    try {
+      console.log('[CRM] Deleting incident:', id);
+      const { error } = await supabase.from('incidents').delete().eq('id', id);
+      if (error) throw error;
+      console.log('[CRM] Incident deleted successfully, refetching all data from database...');
+      await fetchData(); // Refetch everything from database
+    } catch (err) {
+      console.error('Error deleting incident:', err);
+    }
+  };
+
   return (
     <CRMContext.Provider value={{
       staff,
@@ -520,6 +576,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       activities,
       interactions,
       platforms,
+      incidents,
       loading,
       error,
       refreshData: fetchData,
@@ -539,7 +596,10 @@ export function CRMProvider({ children }: { children: ReactNode }) {
       addPlatform,
       updatePlatform,
       deletePlatform,
-      addInteraction
+      addInteraction,
+      addIncident,
+      updateIncident,
+      deleteIncident
     }}>
       {children}
     </CRMContext.Provider>
