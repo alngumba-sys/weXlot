@@ -15,6 +15,8 @@ const STAGES: { id: DealStage; label: string; color: string }[] = [
 ];
 
 export function CRMPipeline() {
+  console.log('[CRMPipeline] Component function called');
+  
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newDeal, setNewDeal] = useState<Partial<Deal>>({ stage: 'planned-visit', probability: 20 });
@@ -27,8 +29,17 @@ export function CRMPipeline() {
   let crmContext;
   try {
     crmContext = useCRM();
-  } catch {
-    return null;
+    console.log('[CRMPipeline] Successfully got CRM context');
+  } catch (error) {
+    console.error('[CRMPipeline] Failed to get CRM context:', error);
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center p-8">
+          <p className="text-red-600 font-bold mb-2">Context Error</p>
+          <p className="text-gray-500 text-sm">CRM context not available</p>
+        </div>
+      </div>
+    );
   }
   
   const { deals, updateDealStage, deleteDeal, addDeal, contacts, companies, platforms, staff, loading } = crmContext;

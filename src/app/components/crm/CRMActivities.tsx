@@ -15,8 +15,14 @@ export function CRMActivities() {
 
   console.log('[CRMActivities] Component rendering...');
 
-  // Get CRM context
-  const crmContext = useCRM();
+  // Safely handle context - return null if not available (during hot reload)
+  let crmContext;
+  try {
+    crmContext = useCRM();
+  } catch {
+    return null;
+  }
+  
   const { activities, addActivity, completeActivity, updateActivity, contacts, deals, staff, loading } = crmContext;
 
   console.log('[CRMActivities] Activities loaded:', activities.length, 'Loading:', loading);

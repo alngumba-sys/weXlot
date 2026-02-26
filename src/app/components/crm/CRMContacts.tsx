@@ -40,7 +40,8 @@ export function CRMContacts() {
     setSaveError(null);
 
     try {
-      await addContact({
+      console.log('[CRMContacts] Submitting new contact:', newContact);
+      const result = await addContact({
         first_name: newContact.first_name,
         last_name: newContact.last_name,
         email: newContact.email,
@@ -53,9 +54,16 @@ export function CRMContacts() {
         decision_authority: newContact.decision_authority,
         notes: newContact.notes
       });
+      
+      if (!result) {
+        throw new Error('Failed to add contact to database');
+      }
+      
+      console.log('[CRMContacts] Contact added successfully:', result);
       setIsAddModalOpen(false);
       setNewContact({});
     } catch (error) {
+      console.error('[CRMContacts] Error adding contact:', error);
       setSaveError('Failed to add contact. Please try again.');
     } finally {
       setIsSaving(false);
@@ -78,7 +86,7 @@ export function CRMContacts() {
   return (
     <div className="flex h-full bg-white">
       {/* Contact Table */}
-      <div className="w-full flex-col">
+      <div className="w-full flex flex-col h-full">
         <div className="p-4 border-b border-gray-200 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold font-[Lexend]">Contacts</h2>
@@ -101,7 +109,7 @@ export function CRMContacts() {
           </div>
         </div>
         
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-y-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
               <tr>

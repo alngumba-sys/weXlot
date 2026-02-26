@@ -5,15 +5,33 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { Briefcase, DollarSign, TrendingUp, Users, Phone, Mail, Calendar } from 'lucide-react';
 
 export function CRMDashboard() {
+  console.log('[CRMDashboard] Component function called');
+  
   // Safely handle context - return null if not available (during hot reload)
   let crmContext;
   try {
     crmContext = useCRM();
-  } catch {
-    return null;
+    console.log('[CRMDashboard] Successfully got CRM context');
+  } catch (error) {
+    console.error('[CRMDashboard] Failed to get CRM context:', error);
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center p-8">
+          <p className="text-red-600 font-bold mb-2">Context Error</p>
+          <p className="text-gray-500 text-sm">CRM context not available</p>
+        </div>
+      </div>
+    );
   }
   
   const { deals, interactions, staff, activities, loading, error } = crmContext;
+  
+  console.log('[CRMDashboard] Rendering with:', { 
+    dealsCount: deals?.length, 
+    staffCount: staff?.length, 
+    loading, 
+    error 
+  });
 
   const stats = useMemo(() => {
     const totalPipelineValue = deals.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
@@ -119,8 +137,8 @@ export function CRMDashboard() {
         {/* Charts */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold font-[Lexend] text-gray-800 mb-4">Pipeline by Rep</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ width: '100%', height: '256px' }}>
+            <ResponsiveContainer>
               <BarChart data={stats.activityByRep}>
                 <XAxis dataKey="name" axisLine={false} tickLine={false} />
                 <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} />

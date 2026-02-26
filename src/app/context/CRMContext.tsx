@@ -227,13 +227,17 @@ export function CRMProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[CRM] Creating new contact:', contact);
       const { data, error } = await supabase.from('contacts').insert(contact).select('*, company:companies(*), owner:staff(*)').single();
-      if (error) throw error;
-      console.log('[CRM] Contact created successfully, refetching all data from database...');
+      if (error) {
+        console.error('[CRM] ❌ Supabase error adding contact:', error);
+        throw error;
+      }
+      console.log('[CRM] ✅ Contact created successfully:', data);
+      console.log('[CRM] 🔄 Refetching all data from database...');
       await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
-      console.error('[CRM] Error adding contact:', err);
-      return null;
+      console.error('[CRM] ❌ Error adding contact:', err);
+      throw err; // Re-throw so the UI can handle it
     }
   };
   
