@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useCRM } from '../../context/CRMContext';
 import { Incident, IncidentSeverity, IncidentStatus } from '../../../types/crm';
 import { format } from 'date-fns';
-import { AlertTriangle, Plus, CheckCircle, Clock, Filter, Search } from 'lucide-react';
+import { AlertTriangle, Plus, CheckCircle, Clock, Filter, Search, Trash2 } from 'lucide-react';
 
 export function CRMIncidents() {
   console.log('[CRMIncidents] Component function called');
@@ -13,6 +13,7 @@ export function CRMIncidents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [newIncident, setNewIncident] = useState<Partial<Incident>>({
     severity: 'medium',
     status: 'ongoing'
@@ -35,9 +36,12 @@ export function CRMIncidents() {
     );
   }
 
-  const { incidents, addIncident, updateIncident, staff, contacts, platforms, loading, error } = crmContext;
+  const { incidents, addIncident, updateIncident, deleteIncident, staff, contacts, platforms, loading, error } = crmContext;
 
   console.log('[CRMIncidents] Rendering with', incidents?.length || 0, 'incidents, loading:', loading);
+
+  // Check if incidents table exists (if incidents is empty and there's no loading, table likely doesn't exist)
+  const incidentsTableExists = incidents.length > 0 || loading || error;
 
   // Filter incidents
   const filteredIncidents = useMemo(() => {
@@ -72,8 +76,18 @@ export function CRMIncidents() {
       });
       setIsAddModalOpen(false);
       setNewIncident({ severity: 'medium', status: 'ongoing' });
-    } catch (error) {
-      setSaveError('Failed to create incident. Please try again.');
+    } catch (error: any) {
+      console.error('Failed to create incident:', error);
+      // Check if it's an RLS policy error
+      if (error?.code === '42501' || error?.message?.includes('row-level security policy')) {
+        setSaveError('⚠️ Row-Level Security Error: Please run /DISABLE_RLS_NOW.sql in your Supabase SQL Editor to fix this.');
+      }
+      // Check if it's a missing table error
+      else if (error?.code === 'PGRST205' || error?.message?.includes('Could not find the table')) {
+        setSaveError('⚠️ Database not set up. Please run the SQL migration script from /supabase-migration-fix.sql in your Supabase SQL Editor.');
+      } else {
+        setSaveError(`Failed to create incident: ${error?.message || 'Please try again.'}`);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -120,12 +134,173 @@ export function CRMIncidents() {
   }
 
   if (error) {
+    // Check if it's an RLS error
+    const isRLSError = error?.message?.includes('row-level security') || error?.code === '42501';
+    
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <p className="text-red-600 mb-2">Error loading incidents</p>
-          <p className="text-gray-500 text-sm">{error}</p>
-        </div>
+      <div className="p-6 max-w-4xl mx-auto">
+        {isRLSError ? (
+          // RLS ERROR - Show prominent fix instructions
+          <div className="space-y-6">
+            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
+              <div className="flex items-start gap-3">
+                <div className="text-3xl">🚨</div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-red-800 mb-2">
+                    Database Security Policy Error
+                  </h2>
+                  <p className="text-red-700 font-semibold mb-4">
+                    Row-Level Security (RLS) is blocking database operations.
+                  </p>
+                  <div className="bg-white rounded p-4 border border-red-200">
+                    <code className="text-sm text-red-900 block whitespace-pre-wrap">
+                      {error?.message || 'new row violates row-level security policy'}
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-600 text-white rounded-lg p-6 shadow-lg">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                ⚡ QUICK FIX (1 minute)
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="bg-blue-700 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-white text-blue-600 font-bold rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-2">Open Supabase Dashboard</p>
+                      <a 
+                        href="https://supabase.com/dashboard" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-block bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-blue-50 transition-colors"
+                      >
+                        → Go to Supabase Dashboard
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-700 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-white text-blue-600 font-bold rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">
+                      2
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold mb-2">Navigate to SQL Editor</p>
+                      <p className="text-blue-100 text-sm">
+                        Click your project → <strong>SQL Editor</strong> (left sidebar) → <strong>New Query</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-700 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-white text-blue-600 font-bold rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">
+                      3
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold mb-3">Copy & Paste This SQL</p>
+                      <div className="bg-gray-900 rounded p-4 relative">
+                        <p className="text-green-400 text-xs mb-2 font-semibold">👇 Click inside and press Ctrl+A (or Cmd+A) to select all, then Ctrl+C (or Cmd+C) to copy</p>
+                        <textarea
+                          readOnly
+                          onClick={(e) => e.currentTarget.select()}
+                          className="w-full bg-gray-800 text-green-400 text-xs p-3 rounded border border-gray-700 font-mono resize-none"
+                          rows={8}
+                          value={`ALTER TABLE IF EXISTS incidents DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS staff DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS platforms DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS companies DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS contacts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS deals DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS activities DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-700 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-white text-blue-600 font-bold rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">
+                      4
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-2">Click RUN in Supabase</p>
+                      <p className="text-blue-100 text-sm">
+                        Then come back here and refresh this page
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-blue-500">
+                <p className="text-sm text-blue-100">
+                  💡 <strong>What this does:</strong> Disables Row-Level Security on your database tables, allowing the app to work in demo/development mode without authentication.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+              <p className="text-sm text-yellow-800">
+                📚 <strong>Alternative:</strong> See files <code className="bg-yellow-100 px-2 py-1 rounded">/QUICK_FIX.md</code>, 
+                <code className="bg-yellow-100 px-2 py-1 rounded ml-1">/DISABLE_RLS_NOW.sql</code>, or 
+                <code className="bg-yellow-100 px-2 py-1 rounded ml-1">/RLS_ERROR_FIX.md</code> in your project folder for detailed instructions.
+              </p>
+            </div>
+          </div>
+        ) : (
+          // OTHER ERRORS - Show original error message
+          <div className="space-y-4">
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 text-3xl mr-4">⚠️</div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Database Setup Required</h3>
+                  <p className="text-gray-700 mb-4">
+                    The incidents table could not be loaded. This usually means the database hasn't been set up yet.
+                  </p>
+                  {error?.message && (
+                    <div className="bg-white p-3 rounded border border-yellow-200 mb-4">
+                      <code className="text-sm text-red-600">{error.message}</code>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded border border-gray-200">
+              <p className="text-sm text-gray-500">
+                To fix this, run the SQL migration script from <code className="bg-gray-100 px-2 py-1 rounded font-mono">/supabase-migration-fix.sql</code> in your Supabase SQL Editor.
+              </p>
+              <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+                <li>Open your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-[#FF4F00] underline hover:text-[#e04500]">Supabase Dashboard</a></li>
+                <li>Go to <strong>SQL Editor</strong> → <strong>New Query</strong></li>
+                <li>Copy all SQL from <code className="bg-gray-100 px-2 py-1 rounded font-mono">/supabase-migration-fix.sql</code></li>
+                <li>Paste and click <strong>Run</strong></li>
+                <li>Refresh this page</li>
+              </ol>
+              <p className="text-xs text-gray-500 mt-3">
+                📄 Use the <strong>migration-fix</strong> script (not setup.sql) if you already have tables.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded border border-blue-200">
+              <p className="text-xs text-blue-700">
+                💡 <strong>Tip:</strong> The migration script safely adds missing columns and tables without deleting your existing data.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -253,16 +428,25 @@ export function CRMIncidents() {
                     {format(new Date(incident.created_at), 'MMM d, yyyy')}
                   </td>
                   <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleToggleStatus(incident)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                        incident.status === 'ongoing'
-                          ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
-                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
-                      }`}
-                    >
-                      {incident.status === 'ongoing' ? 'Mark Resolved' : 'Reopen'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleStatus(incident)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          incident.status === 'ongoing'
+                            ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                      >
+                        {incident.status === 'ongoing' ? 'Mark Resolved' : 'Reopen'}
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirmId(incident.id)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
+                        title="Delete incident"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -282,114 +466,62 @@ export function CRMIncidents() {
               </button>
             </div>
             <form onSubmit={handleAddIncident} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Issue Title *</label>
-                <input
-                  required
-                  value={newIncident.title || ''}
-                  onChange={e => setNewIncident({...newIncident, title: e.target.value})}
-                  className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00]"
-                  placeholder="Brief description of the issue"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Description *</label>
-                <textarea
-                  required
-                  rows={4}
-                  value={newIncident.description || ''}
-                  onChange={e => setNewIncident({...newIncident, description: e.target.value})}
-                  className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00]"
-                  placeholder="Detailed description of the issue..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1">Severity *</label>
-                  <select
-                    required
-                    value={newIncident.severity || 'medium'}
-                    onChange={e => setNewIncident({...newIncident, severity: e.target.value as IncidentSeverity})}
-                    className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00]"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1">Platform</label>
-                  <select
-                    value={newIncident.platform_id || ''}
-                    onChange={e => setNewIncident({...newIncident, platform_id: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00]"
-                  >
-                    <option value="">Select Platform...</option>
-                    {platforms.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1">Related Contact</label>
-                  <select
-                    value={newIncident.contact_id || ''}
-                    onChange={e => setNewIncident({...newIncident, contact_id: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00]"
-                  >
-                    <option value="">Select Contact...</option>
-                    {contacts.map(c => (
-                      <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1">Assign To</label>
-                  <select
-                    value={newIncident.assigned_to || ''}
-                    onChange={e => setNewIncident({...newIncident, assigned_to: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00]"
-                  >
-                    <option value="">Select Staff...</option>
-                    {staff.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {saveError && (
-                <div className="text-sm text-red-500 mt-2">{saveError}</div>
-              )}
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-[#FF4F00] text-white rounded-lg hover:bg-[#e04500]"
-                  disabled={isSaving}
-                >
-                  {isSaving ? 'Creating...' : 'Create Issue'}
-                </button>
-              </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (() => {
+        const incidentToDelete = incidents.find(inc => inc.id === deleteConfirmId);
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-[150] flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-red-100 p-3 rounded-full">
+                    <Trash2 className="text-red-600" size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-gray-900">Delete Issue</h3>
+                    <p className="text-sm text-gray-500">This action cannot be undone</p>
+                  </div>
+                </div>
+                
+                {incidentToDelete && (
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                    <p className="text-sm font-semibold text-gray-900 mb-1">{incidentToDelete.title}</p>
+                    <p className="text-xs text-gray-600 line-clamp-2">{incidentToDelete.description}</p>
+                  </div>
+                )}
+
+                <p className="text-sm text-gray-700 mb-6">
+                  Are you sure you want to delete this incident? This will permanently remove all associated data.
+                </p>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setDeleteConfirmId(null)}
+                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await deleteIncident(deleteConfirmId);
+                      setDeleteConfirmId(null);
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
+                  >
+                    <Trash2 size={16} />
+                    Delete Issue
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

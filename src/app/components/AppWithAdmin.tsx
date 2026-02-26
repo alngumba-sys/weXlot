@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Scissors, 
   Banknote, 
@@ -110,6 +110,7 @@ export default function AppWithAdmin() {
   const [flashingLogo, setFlashingLogo] = useState<string | null>(null);
   const logoQueueRef = useRef<string[]>([]);
   const lastLogoRef = useRef<string | null>(null);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   useEffect(() => {
     const allLogos = ['scissorUp', 'smartLenderUp', 'hotelierUp', 'tillsUp', 'pillsUp', 'salesUp'];
@@ -252,7 +253,7 @@ export default function AppWithAdmin() {
       )}
 
       {/* Header */}
-      <header className="flex justify-between items-center gap-4 px-4 sm:px-8 md:px-16 lg:px-24 py-3 relative">
+      <header className="flex justify-between items-center gap-4 relative px-[96px] py-[4px]">
         {/* Mobile Menu Toggle */}
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -676,7 +677,6 @@ export default function AppWithAdmin() {
               <p className="text-gray-400 group-hover:text-gray-200 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight transition-colors">
                 Fast, reliable, and integrated point-of-sale system for modern retail and hospitality businesses.
               </p>
-              
 
             </a>
 
@@ -704,9 +704,18 @@ export default function AppWithAdmin() {
               </p>
             </a>
 
-            <a 
-              href="#" 
-              className="block cursor-pointer group transition-all mt-[-5px]"
+            <div 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('MintUp (Sales Platform) clicked!');
+                setShowComingSoon(true);
+                setTimeout(() => {
+                  console.log('Hiding popup');
+                  setShowComingSoon(false);
+                }, 4000);
+              }}
+              className="block cursor-pointer group transition-all mt-[-5px] relative"
             >
               <div className="w-full max-w-[199px] h-auto">
                 <ImageWithFallback 
@@ -724,7 +733,17 @@ export default function AppWithAdmin() {
               <p className="text-gray-300 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
                 Enterprise ERP platform optimizing Field Operations, Sales, and Warehouse management.
               </p>
-            </a>
+              
+              {/* Coming Soon Popup */}
+              {showComingSoon && (
+                <div
+                  className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 bg-[#FF4F00] text-white px-4 py-2 rounded-lg shadow-2xl z-[9999] font-bold text-sm whitespace-nowrap border-2 border-white animate-pulse"
+                  style={{ pointerEvents: 'none' }}
+                >
+                  Coming Soon!
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -737,7 +756,7 @@ export default function AppWithAdmin() {
           key="scroller-v2"
           animate={{ x: ["0%", "-50%"] }}
           transition={{ duration: 300, repeat: Infinity, ease: "linear" }}
-          className="flex flex-row gap-4 w-max py-4 px-4 bg-[#76434300]"
+          className="flex flex-row gap-4 w-max bg-[#76434300] px-[16px] py-[0px]"
         >
           {[...rightColumnData, ...rightColumnData, ...rightColumnData, ...rightColumnData, ...rightColumnData, ...rightColumnData, ...rightColumnData, ...rightColumnData].map((card, i) => (
             <div key={i} className="bg-white p-3 rounded-xl border border-orange-50/50 shadow-md min-w-[160px] flex flex-col justify-center">

@@ -92,7 +92,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         { data: activitiesData },
         { data: interactionsData },
         { data: platformsData },
-        { data: incidentsData }
+        { data: incidentsData, error: incidentsError }
       ] = await Promise.all([
         supabase.from('staff').select('*'),
         supabase.from('contacts').select('*, company:companies(*), owner:staff(*)'),
@@ -101,8 +101,15 @@ export function CRMProvider({ children }: { children: ReactNode }) {
         supabase.from('activities').select('*, contact:contacts(*), deal:deals(*), owner:staff(*)').order('due_date', { ascending: true }),
         supabase.from('interactions').select('*').order('date', { ascending: false }),
         supabase.from('platforms').select('*'),
-        supabase.from('incidents').select('*, reporter:staff(*), assignee:staff(*), contact:contacts(*), platform:platforms(*)').order('created_at', { ascending: false })
+        supabase.from('incidents').select('*, reporter:staff!incidents_reported_by_fkey(*), assignee:staff!incidents_assigned_to_fkey(*), contact:contacts(*), platform:platforms(*)').order('created_at', { ascending: false })
       ]);
+
+      // Check if incidents table doesn't exist
+      if (incidentsError && incidentsError.code === 'PGRST205') {
+        console.warn('[CRM] Incidents table not found - database setup required');
+        // Don't set global error - incidents is optional
+        // The Incidents component will handle showing setup instructions
+      }
 
       console.log(`[CRM ${timestamp}] ✓ Successfully fetched from Supabase:`, {
         staff: staffData?.length || 0,
@@ -532,21 +539,24 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const addIncident = async (incident: Omit<Incident, 'id' | 'created_at' | 'updated_at' | 'reporter' | 'assignee' | 'contact' | 'platform'>) => {
     try {
       console.log('[CRM] Creating new incident:', incident);
-      const { data, error } = await supabase.from('incidents').insert(incident).select('*, reporter:staff(*), assignee:staff(*), contact:contacts(*), platform:platforms(*)').single();
-      if (error) throw error;
+      const { data, error } = await supabase.from('incidents').insert(incident).select('*, reporter:staff!incidents_reported_by_fkey(*), assignee:staff!incidents_assigned_to_fkey(*), contact:contacts(*), platform:platforms(*)').single();
+      if (error) {
+        console.error('Error adding incident:', error);
+        throw error;
+      }
       console.log('[CRM] Incident created successfully, refetching all data from database...');
       await fetchData(); // Refetch everything from database
       return data;
     } catch (err) {
       console.error('Error adding incident:', err);
-      return null;
+      throw err; // Re-throw so the UI can handle it
     }
   };
 
   const updateIncident = async (id: string, updates: Partial<Incident>) => {
     try {
       console.log('[CRM] Updating incident:', id, updates);
-      const { data, error } = await supabase.from('incidents').update(updates).eq('id', id).select('*, reporter:staff(*), assignee:staff(*), contact:contacts(*), platform:platforms(*)').single();
+      const { data, error } = await supabase.from('incidents').update(updates).eq('id', id).select('*, reporter:staff!incidents_reported_by_fkey(*), assignee:staff!incidents_assigned_to_fkey(*), contact:contacts(*), platform:platforms(*)').single();
       if (error) throw error;
       console.log('[CRM] Incident updated successfully, refetching all data from database...');
       await fetchData(); // Refetch everything from database
