@@ -458,15 +458,197 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
       {/* Add Incident Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[150] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="border-b border-gray-100 flex justify-between items-center px-[24px] py-[3px]">
               <h3 className="font-bold text-lg">Create New Issue</h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <button 
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setSaveError(null);
+                }} 
+                className="text-gray-400 hover:text-gray-600"
+              >
                 <span className="text-2xl">&times;</span>
               </button>
             </div>
-            <form onSubmit={handleAddIncident} className="p-6 space-y-4">
-            </form>
+            <div className="overflow-y-auto flex-1">
+              <form onSubmit={handleAddIncident} className="p-6 space-y-4">
+                <p className="text-xs text-gray-500 mx-[0px] mt-[0px] mb-[4px]">* Indicates required</p>
+
+                {/* Title Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Issue Title*
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newIncident.title || ''}
+                    onChange={(e) => setNewIncident({ ...newIncident, title: e.target.value })}
+                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none transition-colors"
+                    placeholder="Enter issue title"
+                  />
+                </div>
+
+                {/* Description Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={newIncident.description || ''}
+                    onChange={(e) => setNewIncident({ ...newIncident, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none resize-none transition-colors"
+                    rows={4}
+                    maxLength={2000}
+                    placeholder="Describe the issue..."
+                  />
+                  <div className="text-right text-xs text-gray-500 mt-1">
+                    {(newIncident.description || '').length}/2,000
+                  </div>
+                </div>
+
+                {/* Severity */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Severity*
+                  </label>
+                  <select
+                    required
+                    value={newIncident.severity || 'medium'}
+                    onChange={(e) => setNewIncident({ ...newIncident, severity: e.target.value as IncidentSeverity })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+
+                {/* Platform */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Platform
+                  </label>
+                  <select
+                    value={newIncident.platform_id || ''}
+                    onChange={(e) => setNewIncident({ ...newIncident, platform_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                  >
+                    <option value="">Select platform</option>
+                    {platforms.map(platform => (
+                      <option key={platform.id} value={platform.id}>{platform.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Contact */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Related Contact
+                  </label>
+                  <select
+                    value={newIncident.contact_id || ''}
+                    onChange={(e) => setNewIncident({ ...newIncident, contact_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                  >
+                    <option value="">Select contact</option>
+                    {contacts.map(contact => (
+                      <option key={contact.id} value={contact.id}>
+                        {contact.first_name} {contact.last_name} {contact.business_name ? `(${contact.business_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Assigned To */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assign To
+                  </label>
+                  <select
+                    value={newIncident.assigned_to || ''}
+                    onChange={(e) => setNewIncident({ ...newIncident, assigned_to: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                  >
+                    <option value="">Select team member</option>
+                    {staff.map(member => (
+                      <option key={member.id} value={member.id}>{member.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Reported By */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Reported By
+                  </label>
+                  <select
+                    value={newIncident.reported_by || ''}
+                    onChange={(e) => setNewIncident({ ...newIncident, reported_by: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                  >
+                    <option value="">Select reporter</option>
+                    {staff.map(member => (
+                      <option key={member.id} value={member.id}>{member.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Error Message */}
+                {saveError && (
+                  <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+                    <p className="text-sm text-red-700 font-semibold mb-2">{saveError}</p>
+                    {saveError.includes('Row-Level Security') && (
+                      <div className="mt-3 space-y-3">
+                        <p className="text-xs text-gray-700 font-semibold">
+                          👇 Select all text below (Ctrl+A or Cmd+A), copy (Ctrl+C or Cmd+C), then paste in Supabase SQL Editor:
+                        </p>
+                        <textarea
+                          readOnly
+                          onClick={(e) => e.currentTarget.select()}
+                          className="w-full bg-gray-900 text-green-400 text-xs p-3 rounded border border-gray-700 font-mono resize-none"
+                          rows={8}
+                          value={`ALTER TABLE IF EXISTS incidents DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS staff DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS platforms DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS companies DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS contacts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS deals DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS activities DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
+                        />
+                        <p className="text-xs text-gray-600 text-center">
+                          Then paste in <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-700">Supabase SQL Editor</a> and click RUN
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Buttons */}
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddModalOpen(false);
+                      setSaveError(null);
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
