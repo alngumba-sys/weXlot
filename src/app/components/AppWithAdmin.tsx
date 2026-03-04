@@ -102,7 +102,34 @@ export default function AppWithAdmin() {
       philosophyImage: supabaseImages.philosophyImage || defaultImages.philosophyImage,
     };
     
-    console.log('[' + new Date().toLocaleTimeString() + '] Setting images state to:', newImages);
+    console.log('[' + new Date().toLocaleTimeString() + '] Preloading images...');
+    
+    // Preload critical images before showing them to prevent flash
+    const criticalImages = [
+      newImages.logo,
+      newImages.workspaceImage,
+      newImages.philosophyImage,
+      newImages.scissorUpLogo,
+      newImages.smartLenderUpLogo,
+      newImages.hotelierUpLogo,
+      newImages.pillsUpLogo,
+      newImages.tillsUpLogo,
+      newImages.salesUpLogo
+    ].filter(src => src && !src.startsWith('data:')); // Filter out data URIs as they don't need preloading
+    
+    // Preload all images
+    await Promise.all(
+      criticalImages.map(src => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false); // Resolve even on error to not block
+          img.src = src;
+        });
+      })
+    );
+    
+    console.log('[' + new Date().toLocaleTimeString() + '] Images preloaded, setting state...');
     setImages(newImages);
     setImagesLoaded(true);
   };
@@ -523,13 +550,15 @@ export default function AppWithAdmin() {
           className="cursor-pointer focus:outline-none p-3 -m-3 hover:opacity-80 transition-opacity relative z-20"
           aria-label="WeXlot Logo - Click to open admin"
         >
-          {imagesLoaded && (
+          {imagesLoaded ? (
             <ImageWithFallback 
               src={images.logo}
               alt="WeXlot Logo"
               className="w-[50px] sm:w-[60px] md:w-[67px] h-auto pointer-events-none"
               loading="eager"
             />
+          ) : (
+            <div className="w-[50px] sm:w-[60px] md:w-[67px] h-[20px] sm:h-[24px] md:h-[26px] bg-gray-200 animate-pulse rounded"></div>
           )}
         </button>
       </div>
@@ -559,23 +588,24 @@ export default function AppWithAdmin() {
         </div>
 
         {/* Content Section with Logo and Image */}
-        <div className="max-w-6xl w-full flex flex-col md:flex-row lg:flex-row gap-8 lg:gap-12 items-start relative">
-          {/* Left Side - ScissorUp and SmartLenderUp */}
-          <div className="w-full md:flex-1 lg:flex-none lg:w-64 space-y-8 lg:space-y-12">
-            <a 
-              href="https://scissorup.com/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block cursor-pointer group transition-all mx-[0px] mt-[0px] mb-[12px]"
-            >
-              <div className="w-full max-w-[199px] h-auto m-[0px]">
-                <ImageWithFallback 
-                  key={images.scissorUpLogo}
-                  src={images.scissorUpLogo}
-                  alt="ScissorUp Logo"
-                  className={`w-[199px] h-auto object-contain ${flashingLogo === 'scissorUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
-                />
-              </div>
+        {imagesLoaded && (
+          <div className="max-w-6xl w-full flex flex-col md:flex-row lg:flex-row gap-8 lg:gap-12 items-start relative">
+            {/* Left Side - ScissorUp and SmartLenderUp */}
+            <div className="w-full md:flex-1 lg:flex-none lg:w-64 space-y-8 lg:space-y-12">
+              <a 
+                href="https://scissorup.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block cursor-pointer group transition-all mx-[0px] mt-[0px] mb-[12px]"
+              >
+                <div className="w-full max-w-[199px] h-auto m-[0px]">
+                  <ImageWithFallback 
+                    key={images.scissorUpLogo}
+                    src={images.scissorUpLogo}
+                    alt="ScissorUp Logo"
+                    className={`w-[199px] h-auto object-contain ${flashingLogo === 'scissorUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
+                  />
+                </div>
               
               <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] m-[0px]">
                 Barbershop & Salons
@@ -746,6 +776,17 @@ export default function AppWithAdmin() {
             </div>
           </div>
         </div>
+        )}
+
+        {/* Loading placeholder while images are being fetched and preloaded */}
+        {!imagesLoaded && (
+          <div className="max-w-6xl w-full min-h-[400px] flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF4F00] mx-auto"></div>
+              <p className="text-gray-400 text-sm font-[Mallanna]">Loading platforms...</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Horizontal Scrolling Cards - Full width, in-flow */}

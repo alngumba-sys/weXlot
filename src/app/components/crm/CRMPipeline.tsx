@@ -156,7 +156,7 @@ export function CRMPipeline() {
 
   const handleAddDeal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newDeal.title || !newDeal.value) return;
+    if (!newDeal.title) return;
 
     setIsSaving(true);
     setSaveError(null);
@@ -164,9 +164,9 @@ export function CRMPipeline() {
     try {
       await addDeal({
         title: newDeal.title,
-        value: Number(newDeal.value),
+        value: 0, // Default value since field is removed
         stage: newDeal.stage as DealStage || 'planned-visit',
-        probability: Number(newDeal.probability),
+        probability: 20, // Default probability since field is removed
         expected_close_date: newDeal.expected_close_date,
         contact_id: newDeal.contact_id,
         company_id: newDeal.company_id,
@@ -406,38 +406,14 @@ export function CRMPipeline() {
             </div>
             <form onSubmit={handleAddDeal} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Deal Title</label>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Business name</label>
                 <input 
                   required
                   value={newDeal.title || ''}
                   onChange={e => setNewDeal({...newDeal, title: e.target.value})}
                   className="w-full p-2 border border-gray-200 rounded-lg" 
-                  placeholder="e.g. Enterprise License for Acme Corp"
+                  placeholder="e.g. Acme Corporation"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1">Value ($)</label>
-                  <input 
-                    type="number"
-                    required
-                    value={newDeal.value || ''}
-                    onChange={e => setNewDeal({...newDeal, value: Number(e.target.value)})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1">Probability (%)</label>
-                  <input 
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={newDeal.probability || 20}
-                    onChange={e => setNewDeal({...newDeal, probability: Number(e.target.value)})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
-                  />
-                </div>
               </div>
 
               <div>

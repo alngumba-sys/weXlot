@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useCRM } from '../../context/CRMContext';
 import { Incident, IncidentSeverity, IncidentStatus } from '../../../types/crm';
 import { format } from 'date-fns';
-import { AlertTriangle, Plus, CheckCircle, Clock, Filter, Search, Trash2 } from 'lucide-react';
+import { AlertTriangle, Plus, CheckCircle, Clock, Filter, Search, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 export function CRMIncidents() {
   console.log('[CRMIncidents] Component function called');
@@ -14,6 +14,7 @@ export function CRMIncidents() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [expandedIncidentId, setExpandedIncidentId] = useState<string | null>(null);
   const [newIncident, setNewIncident] = useState<Partial<Incident>>({
     severity: 'medium',
     status: 'ongoing'
@@ -389,67 +390,251 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
                 </td>
               </tr>
             ) : (
-              filteredIncidents.map((incident) => (
-                <tr key={incident.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-gray-900 flex items-center gap-2">
-                        {getSeverityIcon(incident.severity)}
-                        {incident.title}
+              filteredIncidents.flatMap((incident) => {
+                const rows = [
+                  <tr 
+                    key={incident.id}
+                    onClick={() => setExpandedIncidentId(expandedIncidentId === incident.id ? null : incident.id)}
+                    className={`cursor-pointer transition-colors ${
+                      expandedIncidentId === incident.id ? 'bg-blue-50' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-start gap-2">
+                        <button 
+                          className="flex-shrink-0 mt-1 text-gray-400 hover:text-gray-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedIncidentId(expandedIncidentId === incident.id ? null : incident.id);
+                          }}
+                        >
+                          {expandedIncidentId === incident.id ? (
+                            <ChevronUp size={18} className="text-blue-600" />
+                          ) : (
+                            <ChevronDown size={18} />
+                          )}
+                        </button>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            {getSeverityIcon(incident.severity)}
+                            {incident.title}
+                          </div>
+                          <div className="text-sm text-gray-500 mt-1 line-clamp-2">{incident.description}</div>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500 mt-1 line-clamp-2">{incident.description}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold border ${getSeverityColor(incident.severity)}`}>
-                      {incident.severity.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                      incident.status === 'resolved' 
-                        ? 'bg-green-100 text-green-700 border border-green-300' 
-                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                    }`}>
-                      {incident.status === 'resolved' ? <CheckCircle size={12} /> : <Clock size={12} />}
-                      {incident.status === 'resolved' ? 'Resolved' : 'Ongoing'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {incident.platform?.name || '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {incident.contact ? `${incident.contact.first_name} ${incident.contact.last_name}` : '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {incident.assignee?.name || '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {format(new Date(incident.created_at), 'MMM d, yyyy')}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleToggleStatus(incident)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                          incident.status === 'ongoing'
-                            ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
-                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
-                        }`}
-                      >
-                        {incident.status === 'ongoing' ? 'Mark Resolved' : 'Reopen'}
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(incident.id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
-                        title="Delete incident"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold border ${getSeverityColor(incident.severity)}`}>
+                        {incident.severity.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                        incident.status === 'resolved' 
+                          ? 'bg-green-100 text-green-700 border border-green-300' 
+                          : 'bg-gray-100 text-gray-700 border border-gray-300'
+                      }`}>
+                        {incident.status === 'resolved' ? <CheckCircle size={12} /> : <Clock size={12} />}
+                        {incident.status === 'resolved' ? 'Resolved' : 'Ongoing'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {incident.platform?.name || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {incident.contact ? `${incident.contact.first_name} ${incident.contact.last_name}` : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {incident.assignee?.name || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {format(new Date(incident.created_at), 'MMM d, yyyy')}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleStatus(incident);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            incident.status === 'ongoing'
+                              ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
+                              : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                          }`}
+                        >
+                          {incident.status === 'ongoing' ? 'Mark Resolved' : 'Reopen'}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteConfirmId(incident.id);
+                          }}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
+                          title="Delete incident"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ];
+
+                // Add expanded row if this incident is expanded
+                if (expandedIncidentId === incident.id) {
+                  rows.push(
+                    <tr key={`${incident.id}-expanded`} className="bg-blue-50">
+                      <td colSpan={8} className="px-6 py-6">
+                        <div className="bg-white rounded-lg shadow-sm p-6 border-2 border-blue-200">
+                          <div className="flex justify-between items-start mb-4">
+                            <h4 className="text-lg font-bold text-gray-900">Issue Details</h4>
+                            <button
+                              onClick={() => setExpandedIncidentId(null)}
+                              className="text-gray-400 hover:text-gray-600"
+                            >
+                              <span className="text-2xl">&times;</span>
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Title */}
+                            <div className="md:col-span-2">
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                Issue Title
+                              </label>
+                              <p className="text-gray-900 font-medium">{incident.title}</p>
+                            </div>
+
+                            {/* Description */}
+                            <div className="md:col-span-2">
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                Description
+                              </label>
+                              <p className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                {incident.description || 'No description provided'}
+                              </p>
+                            </div>
+
+                            {/* Severity */}
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                Severity Level
+                              </label>
+                              <span className={`inline-flex px-3 py-1.5 rounded-lg text-sm font-bold border ${getSeverityColor(incident.severity)}`}>
+                                {getSeverityIcon(incident.severity)}
+                                <span className="ml-2">{incident.severity.toUpperCase()}</span>
+                              </span>
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                Current Status
+                              </label>
+                              <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold ${
+                                incident.status === 'resolved' 
+                                  ? 'bg-green-100 text-green-700 border border-green-300' 
+                                  : 'bg-gray-100 text-gray-700 border border-gray-300'
+                              }`}>
+                                {incident.status === 'resolved' ? <CheckCircle size={14} /> : <Clock size={14} />}
+                                {incident.status === 'resolved' ? 'Resolved' : 'Ongoing'}
+                              </span>
+                            </div>
+
+                            {/* Platform */}
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                Platform
+                              </label>
+                              <p className="text-gray-900">{incident.platform?.name || 'Not specified'}</p>
+                            </div>
+
+                            {/* Related Contact */}
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                Related Contact
+                              </label>
+                              <p className="text-gray-900">
+                                {incident.contact 
+                                  ? `${incident.contact.first_name} ${incident.contact.last_name}${incident.contact.business_name ? ` (${incident.contact.business_name})` : ''}`
+                                  : 'Not specified'
+                                }
+                              </p>
+                            </div>
+
+                            {/* Assigned To */}
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                Assigned To
+                              </label>
+                              <p className="text-gray-900">{incident.assignee?.name || 'Unassigned'}</p>
+                            </div>
+
+                            {/* Reported By */}
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                Reported By
+                              </label>
+                              <p className="text-gray-900">{incident.reporter?.name || 'Not specified'}</p>
+                            </div>
+
+                            {/* Created Date */}
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                Created On
+                              </label>
+                              <p className="text-gray-900">
+                                {format(new Date(incident.created_at), 'MMMM d, yyyy')}
+                                <span className="text-gray-500 text-sm ml-2">
+                                  at {format(new Date(incident.created_at), 'h:mm a')}
+                                </span>
+                              </p>
+                            </div>
+
+                            {/* Resolved Date (if resolved) */}
+                            {incident.status === 'resolved' && incident.resolved_at && (
+                              <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                  Resolved On
+                                </label>
+                                <p className="text-gray-900">
+                                  {format(new Date(incident.resolved_at), 'MMMM d, yyyy')}
+                                  <span className="text-gray-500 text-sm ml-2">
+                                    at {format(new Date(incident.resolved_at), 'h:mm a')}
+                                  </span>
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action buttons in detail view */}
+                          <div className="mt-6 pt-6 border-t border-gray-200 flex justify-end gap-3">
+                            <button
+                              onClick={() => handleToggleStatus(incident)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                incident.status === 'ongoing'
+                                  ? 'bg-green-600 text-white hover:bg-green-700'
+                                  : 'bg-gray-600 text-white hover:bg-gray-700'
+                              }`}
+                            >
+                              {incident.status === 'ongoing' ? '✓ Mark as Resolved' : '↺ Reopen Issue'}
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(incident.id)}
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
+                            >
+                              <Trash2 size={16} />
+                              Delete Issue
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return rows;
+              })
             )}
           </tbody>
         </table>
