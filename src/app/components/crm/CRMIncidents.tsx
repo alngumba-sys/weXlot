@@ -459,20 +459,20 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[150] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="border-b border-gray-100 flex justify-between items-center px-[24px] py-[3px]">
-              <h3 className="font-bold text-lg">Create New Issue</h3>
+            <div className="border-b border-gray-200 flex justify-between items-center px-6 py-4 flex-shrink-0">
+              <h3 className="font-bold text-xl">Create New Issue</h3>
               <button 
                 onClick={() => {
                   setIsAddModalOpen(false);
                   setSaveError(null);
                 }} 
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 text-3xl leading-none"
               >
-                <span className="text-2xl">&times;</span>
+                &times;
               </button>
             </div>
-            <div className="overflow-y-auto flex-1">
-              <form onSubmit={handleAddIncident} className="p-6 space-y-4">
+            <div className="overflow-y-auto flex-1 p-6">
+              <form onSubmit={handleAddIncident} className="space-y-4">
                 <p className="text-xs text-gray-500 mx-[0px] mt-[0px] mb-[4px]">* Indicates required</p>
 
                 {/* Title Field */}
