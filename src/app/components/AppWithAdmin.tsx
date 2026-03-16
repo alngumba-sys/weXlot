@@ -92,7 +92,7 @@ export default function AppWithAdmin() {
     const newImages = {
       workspaceImage: supabaseImages.workspaceImage || defaultImages.workspaceImage,
       logo: supabaseImages.logo || defaultImages.logo,
-      footerLogo: defaultImages.footerLogo,
+      footerLogo: supabaseImages.footerLogo || defaultImages.footerLogo,
       scissorUpLogo: supabaseImages.scissorUpLogo || defaultImages.scissorUpLogo,
       pillsUpLogo: supabaseImages.pillsUpLogo || defaultImages.pillsUpLogo,
       smartLenderUpLogo: supabaseImages.smartLenderUpLogo || defaultImages.smartLenderUpLogo,
@@ -107,6 +107,7 @@ export default function AppWithAdmin() {
     // Preload critical images before showing them to prevent flash
     const criticalImages = [
       newImages.logo,
+      newImages.footerLogo,
       newImages.workspaceImage,
       newImages.philosophyImage,
       newImages.scissorUpLogo,
@@ -340,14 +341,14 @@ export default function AppWithAdmin() {
           
           <button 
             onClick={scrollToWhoWeAre}
-            className="text-gray-300 hover:text-[#FF4F00] transition-colors font-[Lexend] font-medium text-[14px]"
+            className="hover:text-[#FF4F00] transition-colors font-[Lexend] font-medium text-[14px] text-[#818487]"
           >
             Who We Are
           </button>
           
           <button 
             onClick={scrollToWhyUs}
-            className="text-gray-300 hover:text-[#FF4F00] transition-colors font-[Lexend] font-medium text-[14px]"
+            className="hover:text-[#FF4F00] transition-colors font-[Lexend] font-medium text-[14px] text-[#818487]"
           >
             Why us
           </button>
@@ -355,7 +356,7 @@ export default function AppWithAdmin() {
           <div className="relative" ref={contactDropdownRef}>
             <button 
               onClick={() => setIsContactDropdownOpen(!isContactDropdownOpen)}
-              className="text-gray-300 hover:text-[#FF2200] transition-colors font-[Lexend] font-medium text-[14px]"
+              className="hover:text-[#FF2200] transition-colors font-[Lexend] font-medium text-[14px] text-[#818487]"
             >
               Contact us
             </button>
@@ -607,11 +608,11 @@ export default function AppWithAdmin() {
                   />
                 </div>
               
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] m-[0px]">
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
                 Barbershop & Salons
               </h2>
               
-              <p className="text-gray-300 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
+              <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
                 Transform your appointment booking and client management with a stylish, easy-to-use interface.
               </p>
               
@@ -633,11 +634,11 @@ export default function AppWithAdmin() {
                 />
               </div>
               
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] mx-[0px] mt-[-23px] mb-[2px]">
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] mx-[0px] mt-[-23px] mb-[2px] text-[24px]">
                 Loans Platform
               </h2>
               
-              <p className="text-gray-300 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
+              <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
                 Simplify the lending lifecycle from application to disbursement with intelligent risk assessment.
               </p>
               
@@ -659,11 +660,11 @@ export default function AppWithAdmin() {
                 />
               </div>
               
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] m-[0px]">
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
                 Hotel Platform
               </h2>
               
-              <p className="text-gray-300 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
+              <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
                 All-in-one hospitality management platform. Streamline operations, enhance guest experiences, and driving excellence
               </p>
             </a>
@@ -700,11 +701,11 @@ export default function AppWithAdmin() {
                 />
               </div>
               
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] m-[0px]">
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
                 POS Platform
               </h2>
               
-              <p className="text-gray-400 group-hover:text-gray-200 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight transition-colors">
+              <p className="group-hover:text-gray-200 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight transition-colors text-[#4b4b4b]">
                 Fast, reliable, and integrated point-of-sale system for modern retail and hospitality businesses.
               </p>
 
@@ -725,11 +726,11 @@ export default function AppWithAdmin() {
                 />
               </div>
               
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] m-[0px]">
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
                 Pharmacy Platform
               </h2>
               
-              <p className="text-gray-300 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
+              <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
                 Manage inventory, prescriptions, and patient records with a secure and compliant digital ecosystem.
               </p>
             </a>
@@ -756,11 +757,11 @@ export default function AppWithAdmin() {
                 />
               </div>
               
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] text-[18px] sm:text-[20px] mx-[0px] my-[6px]">
+              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] mx-[0px] my-[6px] text-[24px]">
                 Sales Platform
               </h2>
               
-              <p className="text-gray-300 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight">
+              <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
                 Enterprise ERP platform optimizing Field Operations, Sales, and Warehouse management.
               </p>
               
@@ -986,7 +987,7 @@ export default function AppWithAdmin() {
                       <div className="w-2 h-2 rounded-full bg-gray-400"></div>
                       <span className="text-[#666] font-[Lexend] text-[11px] sm:text-[12px] font-semibold">Before</span>
                     </div>
-                    <p className="text-[#999] font-[Mallanna] text-[11px] sm:text-[12px] pl-4">Manual processes slowing you down</p>
+                    <p className="text-[#999] font-[Mallanna] text-[11px] sm:text-[12px] pl-4 text-[#6a6868]">Manual processes slowing you down</p>
                   </div>
                   <div className="bg-gradient-to-br from-orange-50 to-white rounded-lg p-3 border border-[#FF4F00]">
                     <div className="flex items-center gap-2 mb-1">
@@ -1014,7 +1015,7 @@ export default function AppWithAdmin() {
                       <div className="w-2 h-2 rounded-full bg-gray-400"></div>
                       <span className="text-[#666] font-[Lexend] text-[11px] sm:text-[12px] font-semibold">Before</span>
                     </div>
-                    <p className="text-[#999] font-[Mallanna] text-[11px] sm:text-[12px] pl-4">Stagnant sales and limited insights</p>
+                    <p className="text-[#999] font-[Mallanna] text-[11px] sm:text-[12px] pl-4 text-[#6a6868]">Stagnant sales and limited insights</p>
                   </div>
                   <div className="bg-gradient-to-br from-orange-50 to-white rounded-lg p-3 border border-[#FF4F00]">
                     <div className="flex items-center gap-2 mb-1">
@@ -1042,7 +1043,7 @@ export default function AppWithAdmin() {
                       <div className="w-2 h-2 rounded-full bg-gray-400"></div>
                       <span className="text-[#666] font-[Lexend] text-[11px] sm:text-[12px] font-semibold">Before</span>
                     </div>
-                    <p className="text-[#999] font-[Mallanna] text-[11px] sm:text-[12px] pl-4">Frequent costly mistakes</p>
+                    <p className="text-[#999] font-[Mallanna] text-[11px] sm:text-[12px] pl-4 text-[#6a6868]">Frequent costly mistakes</p>
                   </div>
                   <div className="bg-gradient-to-br from-orange-50 to-white rounded-lg p-3 border border-[#FF4F00]">
                     <div className="flex items-center gap-2 mb-1">
@@ -1066,7 +1067,7 @@ export default function AppWithAdmin() {
             <div>
               <ImageWithFallback 
                 key={images.footerLogo}
-                src={images.footerLogo}
+                src={images.footerLogo || wexlotLogoWhite}
                 alt="WeXlot Logo"
                 className="w-[50px] h-auto mb-4 sm:mb-6"
               />

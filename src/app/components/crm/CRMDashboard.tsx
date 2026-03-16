@@ -38,16 +38,24 @@ export function CRMDashboard() {
     const weightedForecast = deals.reduce((sum, deal) => sum + ((Number(deal.value) || 0) * (deal.probability / 100)), 0);
     const activeDeals = deals.filter(d => d.stage !== 'closed-won' && d.stage !== 'closed-lost').length;
     
-    // Activity by Rep
-    const activityByRep = staff.map(rep => {
-      const repInteractions = interactions.filter(i => i.owner_id === rep.id).length; // assuming interactions have owner_id, wait, schema didn't have owner_id for interactions, let's check
-      // Ah, interactions schema: contact_id, deal_id. But usually interaction is logged by someone. 
-      // I'll assume interactions might need an 'author' but for now let's use activities which have owner_id.
+    // Activity by Rep - ensure unique entries with absolutely unique names
+    const uniqueStaff = staff.filter((rep, index, self) => 
+      index === self.findIndex(r => r.id === rep.id)
+    );
+    
+    const activityByRep = uniqueStaff.map((rep, index) => {
       const repActivities = activities.filter(a => a.owner_id === rep.id && a.completed).length;
+      const dealValue = deals.filter(d => d.owner_id === rep.id).reduce((sum, d) => sum + Number(d.value), 0);
+      
+      // Create a truly unique name by appending ID to prevent any duplicates
+      const uniqueName = `${rep.name || 'Unknown'}_${rep.id || index}`;
+      
       return {
-        name: rep.name,
+        id: rep.id || `rep-${index}`,
+        name: rep.name || 'Unknown', // Display name without ID
+        uniqueKey: uniqueName, // For Recharts internal keying
         activities: repActivities,
-        value: deals.filter(d => d.owner_id === rep.id).reduce((sum, d) => sum + Number(d.value), 0)
+        value: dealValue
       };
     });
 
@@ -137,13 +145,13 @@ export function CRMDashboard() {
         {/* Charts */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold font-[Lexend] text-gray-800 mb-4">Pipeline by Rep</h3>
-          <div style={{ width: '100%', height: '256px' }}>
+          <div style={{ width: '100%', height: '256px' }} key="pipeline-chart-container">
             <ResponsiveContainer>
-              <BarChart data={stats.activityByRep}>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} />
-                <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Value']} />
-                <Bar dataKey="value" fill="#FF4F00" radius={[4, 4, 0, 0]} />
+              <BarChart data={stats.activityByRep} key="pipeline-bar-chart">
+                <XAxis dataKey="name" axisLine={false} tickLine={false} key="x-axis" />
+                <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} key="y-axis" />
+                <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Value']} key="tooltip" />
+                <Bar dataKey="value" fill="#FF4F00" radius={[4, 4, 0, 0]} isAnimationActive={false} key="bar-value" />
               </BarChart>
             </ResponsiveContainer>
           </div>

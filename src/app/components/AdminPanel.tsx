@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { uploadImage, IMAGE_KEYS, ImageKey } from '../../lib/supabase';
 import { X, Upload, CheckCircle, AlertCircle, LayoutDashboard, Trello, Users, Calendar, Settings, Image as ImageIcon, LogOut, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { CRMProvider } from '../context/CRMContext';
@@ -35,6 +35,11 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
   const [uploadStatus, setUploadStatus] = useState<Record<string, 'idle' | 'uploading' | 'success' | 'error' | 'ready'>>({});
   const [selectedFiles, setSelectedFiles] = useState<Partial<Record<ImageKey, File>>>({});
 
+  // Debug: Log currentImages when they change
+  useEffect(() => {
+    console.log('[AdminPanel] currentImages:', currentImages);
+  }, [currentImages]);
+
   const imageDescriptions: Record<ImageKey, string> = {
     logo: 'WeXlot Logo (67x67px recommended)',
     workspaceImage: 'Workspace Dashboard Image',
@@ -45,6 +50,7 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
     hotelierUpLogo: 'HotelierUp Platform Logo (161x79px)',
     salesUpLogo: 'SalesUp Platform Logo (161x79px)',
     philosophyImage: 'Philosophy Section Image (320px wide)',
+    footerLogo: 'Footer Logo (50px width recommended)',
   };
 
   const handleLogin = (e: React.FormEvent) => {

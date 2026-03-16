@@ -15,6 +15,7 @@ export const IMAGE_KEYS = {
   hotelierUpLogo: 'hotelierup-logo',
   salesUpLogo: 'salesup-logo',
   philosophyImage: 'philosophy-image',
+  footerLogo: 'footer-logo',
 } as const;
 
 export type ImageKey = keyof typeof IMAGE_KEYS;
