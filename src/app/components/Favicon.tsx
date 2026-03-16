@@ -2,17 +2,30 @@ import { useEffect } from 'react';
 
 export function Favicon() {
   useEffect(() => {
-    // Create a custom WeXlot favicon with blue X and orange accents as SVG
+    // Create a custom WeXlot favicon with gradient blue background and white double chevrons
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-        <rect width="32" height="32" fill="#1e3a8a"/>
-        <path d="M8 8 L14 16 L8 24 M18 8 L24 16 L18 24" 
-              stroke="#FF4F00" 
-              stroke-width="3" 
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-              fill="none"/>
-        <circle cx="16" cy="16" r="2" fill="#FF4F00"/>
+        <defs>
+          <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <rect width="32" height="32" fill="url(#bgGradient)" rx="4"/>
+        <g transform="translate(8, 16)">
+          <path d="M 0 -6 L 4 0 L 0 6" 
+                stroke="white" 
+                stroke-width="2.5" 
+                stroke-linecap="round" 
+                stroke-linejoin="round" 
+                fill="none"/>
+          <path d="M 5 -6 L 9 0 L 5 6" 
+                stroke="white" 
+                stroke-width="2.5" 
+                stroke-linecap="round" 
+                stroke-linejoin="round" 
+                fill="none"/>
+        </g>
       </svg>
     `;
     
