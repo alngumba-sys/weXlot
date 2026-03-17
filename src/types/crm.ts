@@ -33,6 +33,7 @@ export interface Contact {
   main_need?: string; // Custom field
   budget_range?: string; // Custom field
   decision_authority?: string; // Custom field
+  sales_person_name?: string; // Sales person assigned to this contact
   notes?: string;
   owner_id?: string; // Link to Staff
   created_at: string;

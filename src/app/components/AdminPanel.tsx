@@ -405,8 +405,8 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                 )}
               </div>
 
-              {/* Quick Add Button - Only visible when authenticated */}
-              <QuickAddLead />
+              {/* Quick Add Button - Hidden per user request */}
+              {/* <QuickAddLead /> */}
             </>
           )}
 

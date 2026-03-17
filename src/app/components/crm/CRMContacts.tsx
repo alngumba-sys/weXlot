@@ -54,6 +54,7 @@ export function CRMContacts() {
         main_need: newContact.main_need,
         budget_range: newContact.budget_range,
         decision_authority: newContact.decision_authority,
+        sales_person_name: newContact.sales_person_name,
         notes: newContact.notes
       });
       
@@ -92,6 +93,7 @@ export function CRMContacts() {
         main_need: newContact.main_need,
         budget_range: newContact.budget_range,
         decision_authority: newContact.decision_authority,
+        sales_person_name: newContact.sales_person_name,
         notes: newContact.notes
       });
       
@@ -154,22 +156,25 @@ export function CRMContacts() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[180px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[160px]">
                   Name
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[160px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[140px]">
                   Business Name
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[140px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[130px]">
                   Phone Number
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[160px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[140px]">
                   Location
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[220px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[130px]">
+                  Sales Person
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[180px]">
                   Pain Point
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[220px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[180px]">
                   Notes
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider w-20">
@@ -185,7 +190,6 @@ export function CRMContacts() {
                 >
                   <td className="px-4 py-4 align-top">
                     <div className="font-medium text-gray-900 leading-tight">{contact.first_name} {contact.last_name}</div>
-                    <div className="text-xs text-gray-500 mt-1">{contact.budget_range || 'N/A'}</div>
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-700 align-top">
                     {contact.company_name || contact.company?.name || 'No Company'}
@@ -195,6 +199,9 @@ export function CRMContacts() {
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-700 align-top">
                     {contact.location || 'N/A'}
+                  </td>
+                  <td className="px-4 py-4 text-sm text-gray-700 align-top">
+                    {contact.sales_person_name || 'N/A'}
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-700 align-top">
                     <div className="whitespace-normal break-words text-[12px]">
@@ -335,6 +342,16 @@ export function CRMContacts() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Sales Person Name</label>
+                <input 
+                  value={newContact.sales_person_name || ''}
+                  onChange={e => setNewContact({...newContact, sales_person_name: e.target.value})}
+                  className="w-full p-2 border border-gray-200 rounded-lg" 
+                  placeholder="e.g. John Doe"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Initial Notes</label>
                 <textarea 
                   value={newContact.notes || ''}
@@ -465,6 +482,16 @@ export function CRMContacts() {
                     <option value="Gatekeeper">Gatekeeper</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Sales Person Name</label>
+                <input 
+                  value={newContact.sales_person_name || ''}
+                  onChange={e => setNewContact({...newContact, sales_person_name: e.target.value})}
+                  className="w-full p-2 border border-gray-200 rounded-lg" 
+                  placeholder="e.g. John Doe"
+                />
               </div>
 
               <div>
