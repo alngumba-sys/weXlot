@@ -34,6 +34,8 @@ export interface Contact {
   budget_range?: string; // Custom field
   decision_authority?: string; // Custom field
   sales_person_name?: string; // Sales person assigned to this contact
+  platform_id?: string; // Link to Platform
+  platform?: Platform; // Join
   notes?: string;
   owner_id?: string; // Link to Staff
   created_at: string;

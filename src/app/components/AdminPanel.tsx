@@ -18,8 +18,8 @@ interface AdminPanelProps {
 }
 
 const ADMIN_CREDENTIALS = {
-  username: 'Admin',
-  password: 'Wexlot@2026'
+  username: import.meta.env.VITE_ADMIN_USERNAME || 'Admin',
+  password: import.meta.env.VITE_ADMIN_PASSWORD || 'Wexlot@2026'
 };
 
 export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: AdminPanelProps) {
@@ -71,9 +71,9 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
 
   const handleFileUpload = async (imageKey: ImageKey, file: File) => {
     setUploadStatus(prev => ({ ...prev, [imageKey]: 'uploading' }));
-    
+
     const url = await uploadImage(file, imageKey);
-    
+
     if (url) {
       setUploadStatus(prev => ({ ...prev, [imageKey]: 'success' }));
       setTimeout(() => {
@@ -123,10 +123,10 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100]">
       <CRMProvider>
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] overflow-hidden flex flex-col md:flex-row relative">
-          
+        <div className="bg-white w-full h-screen overflow-hidden flex flex-col md:flex-row relative">
+
           {!isAuthenticated ? (
             <div className="w-full h-full flex items-center justify-center bg-gray-50 p-8 relative">
               <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 px-[32px] py-[14px]">
@@ -134,7 +134,7 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                   <h2 className="font-[Lexend] text-[#FF4F00] text-[16px]">WeXlot Admin</h2>
                   <p className="text-gray-500 mt-2 font-[Mallanna]">Secure CRM Access</p>
                 </div>
-                
+
                 <form onSubmit={handleLogin} className="space-y-6">
                   <div>
                     <label className="block font-bold text-gray-700 mb-2 text-[13px]">Username</label>
@@ -165,13 +165,13 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                       </button>
                     </div>
                   </div>
-                  
+
                   {error && (
                     <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2">
                       <AlertCircle size={16} /> {error}
                     </div>
                   )}
-                  
+
                   <button
                     type="submit"
                     className="w-full bg-[#FF4F00] hover:bg-[#E04500] text-white rounded-lg font-[Lexend] transition-colors shadow-md hover:shadow-lg px-[0px] py-[7px] text-[14px]"
@@ -179,8 +179,8 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                     Login to Dashboard
                   </button>
                 </form>
-                
-                <button 
+
+                <button
                   onClick={onClose}
                   className="w-full mt-4 text-gray-400 hover:text-gray-600 text-sm font-medium transition-colors"
                 >
@@ -204,41 +204,33 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                   <div className="w-8 h-8 bg-[#FF4F00] rounded-lg flex items-center justify-center font-bold text-white">W</div>
                   <span className="font-[Lexend] text-[16px]">WeXlot CRM</span>
                 </div>
-                
+
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                  <button 
+                  <button
                     onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-[#FF4F00] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
                   >
                     <LayoutDashboard size={20} />
                     <span className="font-medium text-[15px]">Dashboard</span>
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => { setActiveTab('pipeline'); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'pipeline' ? 'bg-[#FF4F00] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
                   >
                     <Trello size={20} />
                     <span className="font-medium text-[15px]">Pipeline</span>
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => { setActiveTab('contacts'); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'contacts' ? 'bg-[#FF4F00] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
                   >
                     <Users size={20} />
                     <span className="font-medium text-[15px]">Contacts</span>
                   </button>
-                  
-                  <button 
-                    onClick={() => { setActiveTab('activities'); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'activities' ? 'bg-[#FF4F00] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
-                  >
-                    <Calendar size={20} />
-                    <span className="font-medium text-[15px]">Activities</span>
-                  </button>
 
-                  <button 
+                  <button
                     onClick={() => { setActiveTab('incidents'); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'incidents' ? 'bg-[#FF4F00] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
                   >
@@ -248,16 +240,16 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
 
                   <div className="pt-4 mt-4 border-t border-gray-800">
                     <p className="px-4 text-xs font-bold text-gray-500 uppercase mb-2">System</p>
-                    
-                    <button 
+
+                    <button
                       onClick={() => { setActiveTab('cms'); setIsMobileMenuOpen(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'cms' ? 'bg-[#FF4F00] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
                     >
                       <ImageIcon size={20} />
                       <span className="font-medium text-[15px] text-[#3b424e]">Website Images</span>
                     </button>
-                    
-                    <button 
+
+                    <button
                       onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'settings' ? 'bg-[#FF4F00] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
                     >
@@ -266,9 +258,9 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                     </button>
                   </div>
                 </nav>
-                
+
                 <div className="p-4 border-t border-gray-800">
-                  <button 
+                  <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
                   >
@@ -280,21 +272,12 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
 
               {/* Main Content Area */}
               <div className="flex-1 overflow-hidden relative bg-gray-50">
-                <button 
-                  onClick={onClose}
-                  className="fixed top-6 right-6 z-[200] p-2.5 bg-white rounded-full shadow-lg text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all border border-gray-200"
-                  aria-label="Close panel"
-                >
-                  <X size={20} />
-                </button>
-
                 {activeTab === 'dashboard' && <CRMDashboard />}
                 {activeTab === 'pipeline' && <CRMPipeline />}
                 {activeTab === 'contacts' && <CRMContacts />}
-                {activeTab === 'activities' && <CRMActivities />}
                 {activeTab === 'incidents' && <CRMIncidents />}
                 {activeTab === 'settings' && <CRMSettings />}
-                
+
                 {activeTab === 'cms' && (
                   <div className="h-full overflow-y-auto p-8 relative">
                     <div className="flex justify-between items-center mb-6">
@@ -309,10 +292,10 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                         </button>
                       )}
                     </div>
-                    
+
                     <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg mb-6">
                       <p className="text-sm font-[Mallanna]">
-                        <strong>Note:</strong> Select images to update, then click "Save Changes". Recommended formats: PNG, JPG, SVG. 
+                        <strong>Note:</strong> Select images to update, then click "Save Changes". Recommended formats: PNG, JPG, SVG.
                         Keep file sizes under 2MB for optimal performance.
                       </p>
                     </div>
@@ -322,7 +305,7 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                         const status = uploadStatus[imageKey] || 'idle';
                         const selectedFile = selectedFiles[imageKey];
                         const currentImage = currentImages[imageKey];
-                        
+
                         return (
                           <div
                             key={imageKey}
@@ -344,10 +327,10 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
 
                             {currentImage && !selectedFile && status !== 'success' && (
                               <div className="mb-4 bg-gray-50 rounded-lg p-4 flex items-center justify-center h-32 border border-gray-100 relative group overflow-hidden">
-                                <img 
-                                  src={currentImage} 
-                                  alt="Current" 
-                                  className="max-h-full max-w-full object-contain relative z-10" 
+                                <img
+                                  src={currentImage}
+                                  alt="Current"
+                                  className="max-h-full max-w-full object-contain relative z-10"
                                 />
                                 <div className="absolute bottom-1 right-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm z-20">
                                   Current
@@ -360,8 +343,8 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                               className={`
                                 block w-full border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
                                 transition-all relative overflow-hidden
-                                ${status === 'uploading' 
-                                  ? 'border-[#FF4F00] bg-orange-50' 
+                                ${status === 'uploading'
+                                  ? 'border-[#FF4F00] bg-orange-50'
                                   : selectedFile
                                     ? 'border-[#FF4F00] bg-orange-50/30'
                                     : 'border-gray-200 hover:border-[#FF4F00] hover:bg-gray-50'
@@ -376,7 +359,7 @@ export function AdminPanel({ isOpen, onClose, onImagesUpdated, currentImages }: 
                                 className="hidden"
                                 disabled={status === 'uploading'}
                               />
-                              
+
                               {status === 'uploading' ? (
                                 <>
                                   <Upload className="w-8 h-8 mx-auto mb-3 text-[#FF4F00] animate-pulse" />

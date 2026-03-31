@@ -22,7 +22,7 @@ export function CRMActivities() {
   } catch {
     return null;
   }
-  
+
   const { activities, addActivity, completeActivity, updateActivity, contacts, deals, staff, loading } = crmContext;
 
   console.log('[CRMActivities] Activities loaded:', activities.length, 'Loading:', loading);
@@ -30,7 +30,7 @@ export function CRMActivities() {
   const filteredActivities = activities.filter(activity => {
     if (filter === 'completed') return activity.completed;
     if (activity.completed) return false;
-    
+
     if (filter === 'overdue') {
       return activity.due_date && isPast(new Date(activity.due_date)) && !isToday(new Date(activity.due_date));
     }
@@ -49,7 +49,7 @@ export function CRMActivities() {
 
     try {
       console.log('[Activities] Submitting new activity:', newActivity);
-      
+
       // Clean up data before submitting to database
       const activityData = {
         type: newActivity.type as ActivityType || 'task',
@@ -60,16 +60,16 @@ export function CRMActivities() {
         deal_id: newActivity.deal_id || undefined,
         owner_id: newActivity.owner_id || undefined
       };
-      
+
       console.log('[Activities] Cleaned activity data for DB:', activityData);
       const result = await addActivity(activityData);
-      
+
       if (!result) {
         console.error('[Activities] Failed to create activity - no data returned');
         setSaveError('Failed to add activity. Check console for details.');
         return;
       }
-      
+
       console.log('[Activities] Activity created successfully in database:', result);
       setIsAddModalOpen(false);
       setNewActivity({ type: 'task' });
@@ -88,7 +88,7 @@ export function CRMActivities() {
 
     try {
       console.log('[Activities] Submitting updated activity:', activity);
-      
+
       // Clean up data before submitting to database
       const activityData = {
         type: activity.type as ActivityType || 'task',
@@ -99,10 +99,10 @@ export function CRMActivities() {
         deal_id: activity.deal_id || undefined,
         owner_id: activity.owner_id || undefined
       };
-      
+
       console.log('[Activities] Cleaned activity data for DB:', activityData);
       await updateActivity(activity.id, activityData);
-      
+
       console.log('[Activities] Activity updated successfully in database');
       setIsActionModalOpen(false);
       setSaveError(null);
@@ -116,16 +116,16 @@ export function CRMActivities() {
 
   const handleMoveToOverdue = async () => {
     if (!selectedActivity) return;
-    
+
     setIsSaving(true);
     setSaveError(null);
     try {
       // Set due date to yesterday to make it overdue
       const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
       console.log('[Activities] Moving to overdue with date:', yesterday);
-      await updateActivity(selectedActivity.id, { 
+      await updateActivity(selectedActivity.id, {
         due_date: yesterday,
-        completed: false 
+        completed: false
       });
       setIsActionModalOpen(false);
       setSelectedActivity(null);
@@ -139,12 +139,12 @@ export function CRMActivities() {
 
   const handleMarkCompleted = async () => {
     if (!selectedActivity) return;
-    
+
     setIsSaving(true);
     setSaveError(null);
     try {
       console.log('[Activities] Marking as completed:', selectedActivity.id);
-      await updateActivity(selectedActivity.id, { 
+      await updateActivity(selectedActivity.id, {
         completed: true,
         completed_at: new Date().toISOString()
       });
@@ -168,25 +168,25 @@ export function CRMActivities() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={() => setFilter('upcoming')}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === 'upcoming' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
           >
             Upcoming
           </button>
-          <button 
+          <button
             onClick={() => setFilter('overdue')}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === 'overdue' ? 'bg-red-50 text-red-600' : 'text-gray-500 hover:bg-gray-100'}`}
           >
             Overdue
           </button>
-          <button 
+          <button
             onClick={() => setFilter('completed')}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === 'completed' ? 'bg-green-50 text-green-600' : 'text-gray-500 hover:bg-gray-100'}`}
           >
             Completed
           </button>
-          <button 
+          <button
             onClick={() => setIsAddModalOpen(true)}
             className="ml-4 px-4 py-2 bg-[#FF4F00] text-white rounded-lg hover:bg-[#e04500] flex items-center gap-2"
           >
@@ -198,34 +198,33 @@ export function CRMActivities() {
       <div className="flex-1 overflow-y-auto p-6 relative z-0">
         <div className="space-y-3">
           {filteredActivities.map(activity => (
-            <div 
+            <div
               key={activity.id}
               className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-start gap-4 hover:shadow-md transition-shadow relative ${activity.completed ? 'opacity-50' : ''}`}
             >
-              <button 
+              <button
                 onClick={() => completeActivity(activity.id, !activity.completed)}
                 className={`mt-1 flex-shrink-0 z-10 ${activity.completed ? 'text-green-500' : 'text-gray-300 hover:text-green-500'}`}
               >
                 {activity.completed ? <CheckCircle size={24} /> : <Circle size={24} />}
               </button>
-              
+
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start gap-4">
                   <h3 className={`font-medium text-gray-900 ${activity.completed ? 'line-through' : ''}`}>
                     {activity.description}
                   </h3>
                   {activity.due_date && (
-                    <span className={`text-xs flex items-center gap-1 flex-shrink-0 ${
-                      !activity.completed && isPast(new Date(activity.due_date)) && !isToday(new Date(activity.due_date)) 
-                        ? 'text-red-600 font-bold' 
+                    <span className={`text-xs flex items-center gap-1 flex-shrink-0 ${!activity.completed && isPast(new Date(activity.due_date)) && !isToday(new Date(activity.due_date))
+                        ? 'text-red-600 font-bold'
                         : 'text-gray-400'
-                    }`}>
+                      }`}>
                       <Calendar size={12} />
                       {format(new Date(activity.due_date), 'MMM d')}
                     </span>
                   )}
                 </div>
-                
+
                 <div className="flex gap-4 mt-2 text-sm text-gray-500 flex-wrap">
                   <span className="capitalize px-2 py-0.5 bg-gray-100 rounded text-xs">
                     {activity.type}
@@ -247,7 +246,7 @@ export function CRMActivities() {
                   )}
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => {
                   setSelectedActivity(activity);
                   setIsActionModalOpen(true);
@@ -259,7 +258,7 @@ export function CRMActivities() {
               </button>
             </div>
           ))}
-          
+
           {filteredActivities.length === 0 && (
             <div className="text-center py-12 text-gray-400">
               <CheckCircle size={48} className="mx-auto mb-4 opacity-20" />
@@ -280,11 +279,11 @@ export function CRMActivities() {
             <form onSubmit={handleAddActivity} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Description</label>
-                <input 
+                <input
                   required
                   value={newActivity.description || ''}
-                  onChange={e => setNewActivity({...newActivity, description: e.target.value})}
-                  className="w-full p-2 border border-gray-200 rounded-lg" 
+                  onChange={e => setNewActivity({ ...newActivity, description: e.target.value })}
+                  className="w-full p-2 border border-gray-200 rounded-lg"
                   placeholder="e.g. Follow up with John regarding contract"
                 />
               </div>
@@ -292,33 +291,34 @@ export function CRMActivities() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Type</label>
-                  <select 
+                  <select
                     value={newActivity.type || 'task'}
-                    onChange={e => setNewActivity({...newActivity, type: e.target.value as ActivityType})}
+                    onChange={e => setNewActivity({ ...newActivity, type: e.target.value as ActivityType })}
                     className="w-full p-2 border border-gray-200 rounded-lg"
                   >
                     <option value="task">Task</option>
                     <option value="call">Call</option>
                     <option value="email">Email</option>
                     <option value="meeting">Meeting</option>
+                    <option value="note">Note</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Due Date</label>
-                  <input 
+                  <input
                     type="date"
                     value={newActivity.due_date || ''}
-                    onChange={e => setNewActivity({...newActivity, due_date: e.target.value || undefined})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewActivity({ ...newActivity, due_date: e.target.value || undefined })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Related Contact</label>
-                <select 
+                <select
                   value={newActivity.contact_id || ''}
-                  onChange={e => setNewActivity({...newActivity, contact_id: e.target.value || undefined})}
+                  onChange={e => setNewActivity({ ...newActivity, contact_id: e.target.value || undefined })}
                   className="w-full p-2 border border-gray-200 rounded-lg"
                 >
                   <option value="">None</option>
@@ -330,9 +330,9 @@ export function CRMActivities() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Assigned Staff</label>
-                <select 
+                <select
                   value={newActivity.owner_id || ''}
-                  onChange={e => setNewActivity({...newActivity, owner_id: e.target.value || undefined})}
+                  onChange={e => setNewActivity({ ...newActivity, owner_id: e.target.value || undefined })}
                   className="w-full p-2 border border-gray-200 rounded-lg"
                 >
                   <option value="">None</option>
@@ -349,14 +349,14 @@ export function CRMActivities() {
               )}
 
               <div className="flex justify-end gap-3 mt-6">
-                <button 
+                <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="px-6 py-2 bg-[#FF4F00] text-white rounded-lg hover:bg-[#e04500]"
                   disabled={isSaving}

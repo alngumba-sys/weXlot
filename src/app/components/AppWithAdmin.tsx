@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+in import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Scissors, 
-  Banknote, 
-  BedDouble, 
-  Store, 
-  Pill, 
-  Briefcase, 
+import {
+  Scissors,
+  Banknote,
+  BedDouble,
+  Store,
+  Pill,
+  Briefcase,
   CalendarCheck,
   Users,
   CreditCard,
@@ -75,64 +75,62 @@ export default function AppWithAdmin() {
     philosophyImage: "https://images.unsplash.com/photo-1609619385076-36a873425636?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjcmVhdGl2ZSUyMHRoaW5raW5nJTIwaW5ub3ZhdGlvbiUyMGxpZ2h0YnVsYnxlbnwxfHx8fDE3NzEzMjE4MTh8MA&ixlib=rb-4.1.0&q=60&w=1080&auto=format",
   };
 
-  // State for images - Initialize with default images
-  const [images, setImages] = useState(defaultImages);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
+  // Helper to get cached images synchronously
+  const getCachedImages = () => {
+    try {
+      const cached = localStorage.getItem('wexlot_images_cache');
+      if (cached) {
+        const cachedImages = JSON.parse(cached);
+        // Only use cache if it's less than 5 minutes old
+        if (Date.now() - cachedImages.timestamp < 5 * 60 * 1000) {
+          return cachedImages.data;
+        }
+      }
+    } catch (e) {
+      // Ignore cache errors
+    }
+    return null;
+  };
 
-  // Load images from Supabase on mount
+  // State for images - Initialize with cached images or defaults (no flash!)
+  const [images, setImages] = useState(() => getCachedImages() || defaultImages);
+  const [imagesLoaded, setImagesLoaded] = useState(true); // Start true since we have defaults
+
+  // Load images from Supabase on mount (non-blocking, async)
   useEffect(() => {
-    loadImages();
+    // Fetch fresh images in background (non-blocking)
+    loadImagesInBackground();
   }, []);
 
-  const loadImages = async () => {
-    console.log('[' + new Date().toLocaleTimeString() + '] Loading images from Supabase...');
-    const supabaseImages = await getAllImages();
-    console.log('[' + new Date().toLocaleTimeString() + '] Loaded images from Supabase:', supabaseImages);
-    
-    const newImages = {
-      workspaceImage: supabaseImages.workspaceImage || defaultImages.workspaceImage,
-      logo: supabaseImages.logo || defaultImages.logo,
-      footerLogo: supabaseImages.footerLogo || defaultImages.footerLogo,
-      scissorUpLogo: supabaseImages.scissorUpLogo || defaultImages.scissorUpLogo,
-      pillsUpLogo: supabaseImages.pillsUpLogo || defaultImages.pillsUpLogo,
-      smartLenderUpLogo: supabaseImages.smartLenderUpLogo || defaultImages.smartLenderUpLogo,
-      hotelierUpLogo: supabaseImages.hotelierUpLogo || defaultImages.hotelierUpLogo,
-      tillsUpLogo: supabaseImages.tillsUpLogo || defaultImages.tillsUpLogo,
-      salesUpLogo: supabaseImages.salesUpLogo || defaultImages.salesUpLogo,
-      philosophyImage: supabaseImages.philosophyImage || defaultImages.philosophyImage,
-    };
-    
-    console.log('[' + new Date().toLocaleTimeString() + '] Preloading images...');
-    
-    // Preload critical images before showing them to prevent flash
-    const criticalImages = [
-      newImages.logo,
-      newImages.footerLogo,
-      newImages.workspaceImage,
-      newImages.philosophyImage,
-      newImages.scissorUpLogo,
-      newImages.smartLenderUpLogo,
-      newImages.hotelierUpLogo,
-      newImages.pillsUpLogo,
-      newImages.tillsUpLogo,
-      newImages.salesUpLogo
-    ].filter(src => src && !src.startsWith('data:')); // Filter out data URIs as they don't need preloading
-    
-    // Preload all images
-    await Promise.all(
-      criticalImages.map(src => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve(true);
-          img.onerror = () => resolve(false); // Resolve even on error to not block
-          img.src = src;
-        });
-      })
-    );
-    
-    console.log('[' + new Date().toLocaleTimeString() + '] Images preloaded, setting state...');
-    setImages(newImages);
-    setImagesLoaded(true);
+  const loadImagesInBackground = async () => {
+    try {
+      const supabaseImages = await getAllImages();
+
+      const newImages = {
+        workspaceImage: supabaseImages.workspaceImage || defaultImages.workspaceImage,
+        logo: supabaseImages.logo || defaultImages.logo,
+        footerLogo: supabaseImages.footerLogo || defaultImages.footerLogo,
+        scissorUpLogo: supabaseImages.scissorUpLogo || defaultImages.scissorUpLogo,
+        pillsUpLogo: supabaseImages.pillsUpLogo || defaultImages.pillsUpLogo,
+        smartLenderUpLogo: supabaseImages.smartLenderUpLogo || defaultImages.smartLenderUpLogo,
+        hotelierUpLogo: supabaseImages.hotelierUpLogo || defaultImages.hotelierUpLogo,
+        tillsUpLogo: supabaseImages.tillsUpLogo || defaultImages.tillsUpLogo,
+        salesUpLogo: supabaseImages.salesUpLogo || defaultImages.salesUpLogo,
+        philosophyImage: supabaseImages.philosophyImage || defaultImages.philosophyImage,
+      };
+
+      // Update images immediately (no preloading blocking)
+      setImages(newImages);
+
+      // Cache the images
+      localStorage.setItem('wexlot_images_cache', JSON.stringify({
+        data: newImages,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.error('Failed to load images from Supabase:', error);
+      // Page already shows with defaults, so this is non-critical
+    }
   };
 
   const [flashingLogo, setFlashingLogo] = useState<string | null>(null);
@@ -142,10 +140,10 @@ export default function AppWithAdmin() {
 
   useEffect(() => {
     const allLogos = ['scissorUp', 'smartLenderUp', 'hotelierUp', 'tillsUp', 'pillsUp', 'salesUp'];
-    
+
     const fillQueue = () => {
       let newQueue = [...allLogos];
-      
+
       // Fisher-Yates shuffle
       for (let i = newQueue.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -158,7 +156,7 @@ export default function AppWithAdmin() {
         // Swap first element with the last element
         [newQueue[0], newQueue[newQueue.length - 1]] = [newQueue[newQueue.length - 1], newQueue[0]];
       }
-      
+
       logoQueueRef.current = newQueue;
     };
 
@@ -167,14 +165,14 @@ export default function AppWithAdmin() {
       if (logoQueueRef.current.length === 0) {
         fillQueue();
       }
-      
+
       // Get the next logo
       const selectedLogo = logoQueueRef.current.shift();
-      
+
       if (selectedLogo) {
         lastLogoRef.current = selectedLogo;
         setFlashingLogo(selectedLogo);
-        
+
         // Clear it after 3 seconds (flashing duration)
         setTimeout(() => {
           setFlashingLogo(null);
@@ -186,7 +184,7 @@ export default function AppWithAdmin() {
     flashNextLogo();
 
     // Set interval for subsequent flashes - runs every 4 seconds to allow for 3s flash + 1s gap
-    const intervalId = setInterval(flashNextLogo, 4000); 
+    const intervalId = setInterval(flashNextLogo, 4000);
 
     return () => clearInterval(intervalId);
   }, []);
@@ -197,7 +195,7 @@ export default function AppWithAdmin() {
   };
 
   const handleImagesUpdated = () => {
-    loadImages();
+    loadImagesInBackground();
   };
 
   const platforms = [
@@ -272,7 +270,7 @@ export default function AppWithAdmin() {
     <div className="min-h-screen relative overflow-hidden bg-[#FDF8E8]">
       {/* Admin Panel */}
       {isAdminOpen && (
-        <AdminPanel 
+        <AdminPanel
           isOpen={isAdminOpen}
           onClose={() => setIsAdminOpen(false)}
           onImagesUpdated={handleImagesUpdated}
@@ -302,13 +300,13 @@ export default function AppWithAdmin() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex ml-auto items-center gap-6">
           <div className="relative" ref={dropdownRef}>
-            <button 
+            <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="hover:text-[#FF4F00] transition-colors font-[Lexend] font-medium text-[#ff4f01] text-[14px]"
             >
               Book a Demo
             </button>
-            
+
             {isDropdownOpen && (
               <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg py-2 w-64 z-50">
                 <div className="px-4 py-2 text-sm text-[#999] font-[Lexend] border-b border-gray-100">
@@ -324,7 +322,7 @@ export default function AppWithAdmin() {
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     <div className="flex items-center justify-center w-24 h-12">
-                      <ImageWithFallback 
+                      <ImageWithFallback
                         src={platform.logo}
                         alt={platform.name}
                         className={`${platform.logoClass} h-auto object-contain`}
@@ -338,35 +336,35 @@ export default function AppWithAdmin() {
               </div>
             )}
           </div>
-          
-          <button 
+
+          <button
             onClick={scrollToWhoWeAre}
             className="hover:text-[#FF4F00] transition-colors font-[Lexend] font-medium text-[14px] text-[#818487]"
           >
             Who We Are
           </button>
-          
-          <button 
+
+          <button
             onClick={scrollToWhyUs}
             className="hover:text-[#FF4F00] transition-colors font-[Lexend] font-medium text-[14px] text-[#818487]"
           >
             Why us
           </button>
-          
+
           <div className="relative" ref={contactDropdownRef}>
-            <button 
+            <button
               onClick={() => setIsContactDropdownOpen(!isContactDropdownOpen)}
               className="hover:text-[#FF2200] transition-colors font-[Lexend] font-medium text-[14px] text-[#818487]"
             >
               Contact us
             </button>
-            
+
             {isContactDropdownOpen && (
               <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg py-3 w-80 z-50">
                 <div className="px-4 py-2 text-sm text-[#999] font-[Lexend] border-b border-gray-100 mb-2">
                   Get in touch with us:
                 </div>
-                
+
                 <div className="px-4 py-3 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-[#FF4F00] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,7 +378,7 @@ export default function AppWithAdmin() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="px-4 py-3 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-[#FF4F00] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -394,7 +392,7 @@ export default function AppWithAdmin() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="px-4 py-3 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-[#FF4F00] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,23 +408,23 @@ export default function AppWithAdmin() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="px-4 py-3 border-t border-gray-100 mt-2">
                   <p className="text-xs font-[Lexend] font-semibold text-[#666] mb-3">Follow Us</p>
                   <div className="flex gap-4">
                     <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                       <svg className="w-5 h-5" fill="#0A66C2" viewBox="0 0 24 24">
-                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                       </svg>
                     </a>
                     <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                       <svg className="w-5 h-5" fill="#1DA1F2" viewBox="0 0 24 24">
-                        <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                        <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
                       </svg>
                     </a>
                     <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                       <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                       </svg>
                     </a>
                     <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
@@ -439,7 +437,7 @@ export default function AppWithAdmin() {
                             <stop offset="100%" style={{ stopColor: '#4C63D2' }} />
                           </linearGradient>
                         </defs>
-                        <path fill="url(#instagram-gradient)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                        <path fill="url(#instagram-gradient)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
                       </svg>
                     </a>
                   </div>
@@ -453,7 +451,7 @@ export default function AppWithAdmin() {
         {isMobileMenuOpen && (
           <div className="fixed inset-0 bg-white z-40 md:hidden overflow-y-auto">
             <div className="flex flex-col p-6 pt-16 space-y-6">
-              <button 
+              <button
                 onClick={() => {
                   setIsDropdownOpen(!isDropdownOpen);
                 }}
@@ -461,7 +459,7 @@ export default function AppWithAdmin() {
               >
                 Book a Demo
               </button>
-              
+
               {isDropdownOpen && (
                 <div className="pl-4 space-y-4 border-l-2 border-[#FF4F00]">
                   {platforms.map((platform, index) => (
@@ -477,7 +475,7 @@ export default function AppWithAdmin() {
                       }}
                     >
                       <div className="flex items-center justify-center w-16 h-10">
-                        <ImageWithFallback 
+                        <ImageWithFallback
                           src={platform.logo}
                           alt={platform.name}
                           className="w-full h-auto object-contain"
@@ -490,29 +488,29 @@ export default function AppWithAdmin() {
                   ))}
                 </div>
               )}
-              
-              <button 
+
+              <button
                 onClick={scrollToWhoWeAre}
                 className="text-[#868686] font-[Lexend] font-medium text-[16px] text-left"
               >
                 Who We Are
               </button>
-              
-              <button 
+
+              <button
                 onClick={scrollToWhyUs}
                 className="text-[#868686] font-[Lexend] font-medium text-[16px] text-left"
               >
                 Why us
               </button>
-              
+
               <div>
-                <button 
+                <button
                   onClick={() => setIsContactDropdownOpen(!isContactDropdownOpen)}
                   className="text-[#868686] font-[Lexend] font-medium text-[16px] text-left"
                 >
                   Contact us
                 </button>
-                
+
                 {isContactDropdownOpen && (
                   <div className="mt-4 pl-4 space-y-4 border-l-2 border-[#FF4F00]">
                     <div>
@@ -521,14 +519,14 @@ export default function AppWithAdmin() {
                         +254 712 000 000
                       </a>
                     </div>
-                    
+
                     <div>
                       <p className="text-xs font-[Lexend] font-semibold text-[#666] mb-1">Email</p>
                       <a href="mailto:info@wexlot.com" className="text-sm font-[Mallanna] text-[#666]">
                         info@wexlot.com
                       </a>
                     </div>
-                    
+
                     <div>
                       <p className="text-xs font-[Lexend] font-semibold text-[#666] mb-1">Location</p>
                       <p className="text-sm font-[Mallanna] text-[#666] leading-relaxed">
@@ -552,7 +550,7 @@ export default function AppWithAdmin() {
           aria-label="WeXlot Logo - Click to open admin"
         >
           {imagesLoaded ? (
-            <ImageWithFallback 
+            <ImageWithFallback
               src={images.logo}
               alt="WeXlot Logo"
               className="w-[50px] sm:w-[60px] md:w-[67px] h-auto pointer-events-none"
@@ -571,13 +569,13 @@ export default function AppWithAdmin() {
           hello,<br />
           we are WeXlot,<br />
           we build <span className="text-[#FF4F00]">platforms that actually<br />
-          help businesses grow.</span>
+            help businesses grow.</span>
         </h1>
 
         {/* Workspace Image - Shows on mobile only (below text) */}
         <div className="w-full max-w-2xl mb-8 lg:hidden">
           {imagesLoaded && (
-            <ImageWithFallback 
+            <ImageWithFallback
               src={images.workspaceImage}
               alt="Business platform dashboard"
               className="w-full h-auto object-contain rounded-lg opacity-55"
@@ -593,190 +591,190 @@ export default function AppWithAdmin() {
           <div className="max-w-6xl w-full flex flex-col md:flex-row lg:flex-row gap-8 lg:gap-12 items-start relative">
             {/* Left Side - ScissorUp and SmartLenderUp */}
             <div className="w-full md:flex-1 lg:flex-none lg:w-64 space-y-8 lg:space-y-12">
-              <a 
-                href="https://scissorup.com/" 
-                target="_blank" 
+              <a
+                href="https://scissorup.com/"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="block cursor-pointer group transition-all mx-[0px] mt-[0px] mb-[12px]"
               >
                 <div className="w-full max-w-[199px] h-auto m-[0px]">
-                  <ImageWithFallback 
+                  <ImageWithFallback
                     key={images.scissorUpLogo}
                     src={images.scissorUpLogo}
                     alt="ScissorUp Logo"
                     className={`w-[199px] h-auto object-contain ${flashingLogo === 'scissorUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
                   />
                 </div>
-              
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
-                Barbershop & Salons
-              </h2>
-              
-              <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
-                Transform your appointment booking and client management with a stylish, easy-to-use interface.
-              </p>
-              
 
-            </a>
+                <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
+                  Barbershop & Salons
+                </h2>
 
-            <a 
-              href="https://smartlenderup.com/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block cursor-pointer group transition-all"
-            >
-              <div className="w-full max-w-[199px] h-[79px]">
-                <ImageWithFallback 
-                  key={images.smartLenderUpLogo}
-                  src={images.smartLenderUpLogo}
-                  alt="SmartLenderUp Logo"
-                  className={`w-[178px] h-auto object-contain mt-[39px] ${flashingLogo === 'smartLenderUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
-                />
-              </div>
-              
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] mx-[0px] mt-[-23px] mb-[2px] text-[24px]">
-                Loans Platform
-              </h2>
-              
-              <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
-                Simplify the lending lifecycle from application to disbursement with intelligent risk assessment.
-              </p>
-              
+                <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
+                  Transform your appointment booking and client management with a stylish, easy-to-use interface.
+                </p>
 
-            </a>
 
-            <a 
-              href="https://hotelierup.com/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block cursor-pointer group transition-all"
-            >
-              <div className="w-full max-w-[199px] h-auto">
-                <ImageWithFallback 
-                  key={images.hotelierUpLogo}
-                  src={images.hotelierUpLogo}
-                  alt="HotelierUp Logo"
-                  className={`w-[199px] h-auto object-contain mx-[0px] my-[5px] ${flashingLogo === 'hotelierUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
-                />
-              </div>
-              
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
-                Hotel Platform
-              </h2>
-              
-              <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
-                All-in-one hospitality management platform. Streamline operations, enhance guest experiences, and driving excellence
-              </p>
-            </a>
-          </div>
+              </a>
 
-          {/* Center - Workspace Image (Desktop only - positioned in center) */}
-          <div className="hidden lg:block flex-1 relative min-h-[400px]">
-            {imagesLoaded && (
-              <ImageWithFallback 
-                src={images.workspaceImage}
-                alt="Business platform dashboard"
-                className="w-[115%] h-auto object-contain rounded-lg opacity-55 absolute left-1/2 -translate-x-1/2 top-8"
-                loading="eager"
-                width={1080}
-                height={600}
-              />
-            )}
-          </div>
-
-          {/* Right Side - TillsUp and PillsUp */}
-          <div className="w-full md:flex-1 lg:flex-none lg:w-64 space-y-8 lg:space-y-12">
-            <a 
-              href="http://www.tillsup.com/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block cursor-pointer group transition-all"
-            >
-              <div className="w-full max-w-[199px] h-auto">
-                <ImageWithFallback 
-                  key={images.tillsUpLogo}
-                  src={images.tillsUpLogo}
-                  alt="TillsUp Logo"
-                  className={`w-[128px] h-auto object-contain mt-[12px] ${flashingLogo === 'tillsUp' ? 'grayscale-0 opacity-100 scale-[1.15]' : 'grayscale opacity-70 scale-100'} group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-500`}
-                />
-              </div>
-              
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
-                POS Platform
-              </h2>
-              
-              <p className="group-hover:text-gray-200 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight transition-colors text-[#4b4b4b]">
-                Fast, reliable, and integrated point-of-sale system for modern retail and hospitality businesses.
-              </p>
-
-            </a>
-
-            <a 
-              href="https://pillsup.com/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block cursor-pointer group transition-all"
-            >
-              <div className="w-full max-w-[199px] h-auto mt-[-20px]">
-                <ImageWithFallback 
-                  key={images.pillsUpLogo}
-                  src={images.pillsUpLogo}
-                  alt="PillsUp Logo"
-                  className={`w-[161px] h-auto object-contain mt-[0px] m-[0px] ${flashingLogo === 'pillsUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
-                />
-              </div>
-              
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
-                Pharmacy Platform
-              </h2>
-              
-              <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
-                Manage inventory, prescriptions, and patient records with a secure and compliant digital ecosystem.
-              </p>
-            </a>
-
-            <div 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('MintUp (Sales Platform) clicked!');
-                setShowComingSoon(true);
-                setTimeout(() => {
-                  console.log('Hiding popup');
-                  setShowComingSoon(false);
-                }, 4000);
-              }}
-              className="block cursor-pointer group transition-all mt-[-5px] relative"
-            >
-              <div className="w-full max-w-[199px] h-auto">
-                <ImageWithFallback 
-                  key={images.salesUpLogo}
-                  src={images.salesUpLogo}
-                  alt="MintUp Logo"
-                  className={`w-[115px] h-auto object-contain mt-[10px] m-[0px] ${flashingLogo === 'salesUp' ? 'grayscale-0 opacity-100 scale-[1.15]' : 'grayscale opacity-70 scale-100'} group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-500`}
-                />
-              </div>
-              
-              <h2 className="font-bold text-[#FF4F00] font-[Mallanna] mx-[0px] my-[6px] text-[24px]">
-                Sales Platform
-              </h2>
-              
-              <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
-                Enterprise ERP platform optimizing Field Operations, Sales, and Warehouse management.
-              </p>
-              
-              {/* Coming Soon Popup */}
-              {showComingSoon && (
-                <div
-                  className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 bg-[#FF4F00] text-white px-4 py-2 rounded-lg shadow-2xl z-[9999] font-bold text-sm whitespace-nowrap border-2 border-white animate-pulse"
-                  style={{ pointerEvents: 'none' }}
-                >
-                  Coming Soon!
+              <a
+                href="https://smartlenderup.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block cursor-pointer group transition-all"
+              >
+                <div className="w-full max-w-[199px] h-[79px]">
+                  <ImageWithFallback
+                    key={images.smartLenderUpLogo}
+                    src={images.smartLenderUpLogo}
+                    alt="SmartLenderUp Logo"
+                    className={`w-[178px] h-auto object-contain mt-[39px] ${flashingLogo === 'smartLenderUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
+                  />
                 </div>
+
+                <h2 className="font-bold text-[#FF4F00] font-[Mallanna] mx-[0px] mt-[-23px] mb-[2px] text-[24px]">
+                  Loans Platform
+                </h2>
+
+                <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
+                  Simplify the lending lifecycle from application to disbursement with intelligent risk assessment.
+                </p>
+
+
+              </a>
+
+              <a
+                href="https://hotelierup.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block cursor-pointer group transition-all"
+              >
+                <div className="w-full max-w-[199px] h-auto">
+                  <ImageWithFallback
+                    key={images.hotelierUpLogo}
+                    src={images.hotelierUpLogo}
+                    alt="HotelierUp Logo"
+                    className={`w-[199px] h-auto object-contain mx-[0px] my-[5px] ${flashingLogo === 'hotelierUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
+                  />
+                </div>
+
+                <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
+                  Hotel Platform
+                </h2>
+
+                <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
+                  All-in-one hospitality management platform. Streamline operations, enhance guest experiences, and driving excellence
+                </p>
+              </a>
+            </div>
+
+            {/* Center - Workspace Image (Desktop only - positioned in center) */}
+            <div className="hidden lg:block flex-1 relative min-h-[400px]">
+              {imagesLoaded && (
+                <ImageWithFallback
+                  src={images.workspaceImage}
+                  alt="Business platform dashboard"
+                  className="w-[115%] h-auto object-contain rounded-lg opacity-55 absolute left-1/2 -translate-x-1/2 top-8"
+                  loading="eager"
+                  width={1080}
+                  height={600}
+                />
               )}
             </div>
+
+            {/* Right Side - TillsUp and PillsUp */}
+            <div className="w-full md:flex-1 lg:flex-none lg:w-64 space-y-8 lg:space-y-12">
+              <a
+                href="http://www.tillsup.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block cursor-pointer group transition-all"
+              >
+                <div className="w-full max-w-[199px] h-auto">
+                  <ImageWithFallback
+                    key={images.tillsUpLogo}
+                    src={images.tillsUpLogo}
+                    alt="TillsUp Logo"
+                    className={`w-[128px] h-auto object-contain mt-[12px] ${flashingLogo === 'tillsUp' ? 'grayscale-0 opacity-100 scale-[1.15]' : 'grayscale opacity-70 scale-100'} group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-500`}
+                  />
+                </div>
+
+                <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
+                  POS Platform
+                </h2>
+
+                <p className="group-hover:text-gray-200 mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight transition-colors text-[#4b4b4b]">
+                  Fast, reliable, and integrated point-of-sale system for modern retail and hospitality businesses.
+                </p>
+
+              </a>
+
+              <a
+                href="https://pillsup.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block cursor-pointer group transition-all"
+              >
+                <div className="w-full max-w-[199px] h-auto mt-[-20px]">
+                  <ImageWithFallback
+                    key={images.pillsUpLogo}
+                    src={images.pillsUpLogo}
+                    alt="PillsUp Logo"
+                    className={`w-[161px] h-auto object-contain mt-[0px] m-[0px] ${flashingLogo === 'pillsUp' ? 'grayscale-0 scale-[1.15]' : 'grayscale scale-100'} group-hover:grayscale-0 group-hover:scale-100 transition-all duration-500`}
+                  />
+                </div>
+
+                <h2 className="font-bold text-[#FF4F00] font-[Mallanna] m-[0px] text-[24px]">
+                  Pharmacy Platform
+                </h2>
+
+                <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
+                  Manage inventory, prescriptions, and patient records with a secure and compliant digital ecosystem.
+                </p>
+              </a>
+
+              <div
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('MintUp (Sales Platform) clicked!');
+                  setShowComingSoon(true);
+                  setTimeout(() => {
+                    console.log('Hiding popup');
+                    setShowComingSoon(false);
+                  }, 4000);
+                }}
+                className="block cursor-pointer group transition-all mt-[-5px] relative"
+              >
+                <div className="w-full max-w-[199px] h-auto">
+                  <ImageWithFallback
+                    key={images.salesUpLogo}
+                    src={images.salesUpLogo}
+                    alt="MintUp Logo"
+                    className={`w-[115px] h-auto object-contain mt-[10px] m-[0px] ${flashingLogo === 'salesUp' ? 'grayscale-0 opacity-100 scale-[1.15]' : 'grayscale opacity-70 scale-100'} group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-500`}
+                  />
+                </div>
+
+                <h2 className="font-bold text-[#FF4F00] font-[Mallanna] mx-[0px] my-[6px] text-[24px]">
+                  Sales Platform
+                </h2>
+
+                <p className="mb-3 leading-relaxed text-[12px] sm:text-[13px] font-[Mallanna] tracking-tight text-[#4b4b4b]">
+                  Enterprise ERP platform optimizing Field Operations, Sales, and Warehouse management.
+                </p>
+
+                {/* Coming Soon Popup */}
+                {showComingSoon && (
+                  <div
+                    className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 bg-[#FF4F00] text-white px-4 py-2 rounded-lg shadow-2xl z-[9999] font-bold text-sm whitespace-nowrap border-2 border-white animate-pulse"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    Coming Soon!
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
         )}
 
         {/* Loading placeholder while images are being fetched and preloaded */}
@@ -820,7 +818,7 @@ export default function AppWithAdmin() {
           <h2 className="text-[28px] sm:text-[36px] md:text-[42px] font-bold font-[Lexend] text-[#FF4F00] mb-6 md:mb-8 text-center">
             Who We Are
           </h2>
-          
+
           <div className="mt-8 md:mt-16">
             {/* Philosophy, Image, and Approach */}
             <div className="flex flex-col lg:flex-row justify-center items-start gap-6 md:gap-8 mt-8 md:mt-16 mb-8 md:mb-12">
@@ -842,10 +840,10 @@ export default function AppWithAdmin() {
                   <p className="text-[#666] font-[Mallanna] text-[13px] sm:text-[14px]"><span className="font-semibold">Customer-First</span> - Your success is our priority</p>
                 </div>
               </div>
-              
+
               {/* Centered Image */}
               {imagesLoaded && (
-                <ImageWithFallback 
+                <ImageWithFallback
                   src={images.philosophyImage}
                   alt="Creative thinking and innovation"
                   className="w-full max-w-[250px] sm:max-w-[280px] md:max-w-[320px] h-auto object-contain opacity-50 flex-shrink-0 mx-auto lg:mx-0"
@@ -854,7 +852,7 @@ export default function AppWithAdmin() {
                   height={213}
                 />
               )}
-              
+
               {/* Approach */}
               <div className="flex-1 max-w-md">
                 <h3 className="text-[20px] sm:text-[22px] md:text-[24px] font-bold font-[Lexend] text-[#666] mb-3 md:mb-4">
@@ -877,7 +875,7 @@ export default function AppWithAdmin() {
                     <p className="text-[#666] font-[Mallanna] text-[14px] sm:text-[15px]">Data-driven insights to maximize growth</p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-3 mt-4 md:mt-6 pt-4 border-t border-gray-200">
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-[#FF4F00] rounded-full mt-2 flex-shrink-0"></div>
@@ -913,7 +911,7 @@ export default function AppWithAdmin() {
             <p className="text-[#666] font-[Mallanna] text-[13px] sm:text-[14px] text-center mb-6 md:mb-8 max-w-2xl mx-auto">
               Trusted by businesses worldwide to deliver exceptional results and measurable growth
             </p>
-            
+
             {/* Statistics Grid - First Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-white rounded-xl p-4 sm:p-6 text-center shadow-md hover:shadow-xl transition-shadow border border-gray-100">
@@ -932,7 +930,7 @@ export default function AppWithAdmin() {
                 <p className="text-[#999] font-[Mallanna] text-[11px] sm:text-[12px]">Always here when you need us</p>
               </div>
             </div>
-            
+
             {/* Second Row of Statistics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
               <div className="bg-white rounded-xl text-center shadow-md hover:shadow-xl transition-shadow border border-gray-100 px-3 py-2 sm:px-4 sm:py-3">
@@ -956,7 +954,7 @@ export default function AppWithAdmin() {
                 <p className="text-[#999] font-[Mallanna] text-[10px] sm:text-[11px]">Diverse expertise</p>
               </div>
             </div>
-            
+
             {/* Divider with title */}
             <div className="relative mb-6">
               <div className="absolute inset-0 flex items-center">
@@ -968,7 +966,7 @@ export default function AppWithAdmin() {
                 </span>
               </div>
             </div>
-            
+
             {/* Before vs After Comparison */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               {/* Operational Efficiency */}
@@ -998,7 +996,7 @@ export default function AppWithAdmin() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Revenue Growth */}
               <div className="bg-white rounded-xl p-4 sm:p-6 shadow-md border-2 border-gray-100 hover:border-[#FF4F00] transition-all">
                 <div className="text-center mb-4">
@@ -1026,7 +1024,7 @@ export default function AppWithAdmin() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Error Reduction */}
               <div className="bg-white rounded-xl p-4 sm:p-6 shadow-md border-2 border-gray-100 hover:border-[#FF4F00] transition-all">
                 <div className="text-center mb-4">
@@ -1065,7 +1063,7 @@ export default function AppWithAdmin() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10 md:gap-12 mb-8 sm:mb-12">
             {/* Company Info */}
             <div>
-              <ImageWithFallback 
+              <ImageWithFallback
                 key={images.footerLogo}
                 src={images.footerLogo || wexlotLogoWhite}
                 alt="WeXlot Logo"
@@ -1132,35 +1130,35 @@ export default function AppWithAdmin() {
                   </a>
                 </li>
               </ul>
-              
+
               <div>
                 <h5 className="font-bold font-[Lexend] text-[13px] sm:text-[14px] mb-2 sm:mb-3 text-white">Follow Us</h5>
                 <div className="flex gap-3 sm:gap-4">
                   <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="#ffffff" viewBox="0 0 24 24">
-                      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                     </svg>
                   </a>
                   <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="#1DA1F2" viewBox="0 0 24 24">
-                      <path fill="#ffffff" d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                      <path fill="#ffffff" d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
                     </svg>
                   </a>
                   <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="#ffffff" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                     </svg>
                   </a>
                   <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="#ffffff" viewBox="0 0 24 24">
-                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                      </svg>
-                    </a>
-                  </div>
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                    </svg>
+                  </a>
                 </div>
               </div>
             </div>
           </div>
+        </div>
       </footer>
     </div>
   );

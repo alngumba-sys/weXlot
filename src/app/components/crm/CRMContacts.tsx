@@ -5,6 +5,7 @@ import { Contact } from '../../../types/crm';
 
 export function CRMContacts() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterPlatform, setFilterPlatform] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -21,18 +22,20 @@ export function CRMContacts() {
   } catch {
     return null;
   }
-  
-  const { contacts, addContact, updateContact, deleteContact, loading } = crmContext;
+
+  const { contacts, addContact, updateContact, deleteContact, platforms, loading } = crmContext;
 
   console.log('[CRMContacts] Rendering with', contacts?.length || 0, 'contacts, loading:', loading);
 
-  const filteredContacts = contacts.filter(c => 
-    c.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.location?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredContacts = contacts.filter(c => {
+    const matchesSearch = c.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.location?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesPlatform = filterPlatform === 'all' || c.platform_id === filterPlatform;
+    return matchesSearch && matchesPlatform;
+  });
 
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,13 +58,14 @@ export function CRMContacts() {
         budget_range: newContact.budget_range,
         decision_authority: newContact.decision_authority,
         sales_person_name: newContact.sales_person_name,
+        platform_id: newContact.platform_id,
         notes: newContact.notes
       });
-      
+
       if (!result) {
         throw new Error('Failed to add contact to database');
       }
-      
+
       console.log('[CRMContacts] Contact added successfully:', result);
       setIsAddModalOpen(false);
       setNewContact({});
@@ -94,13 +98,14 @@ export function CRMContacts() {
         budget_range: newContact.budget_range,
         decision_authority: newContact.decision_authority,
         sales_person_name: newContact.sales_person_name,
+        platform_id: newContact.platform_id,
         notes: newContact.notes
       });
-      
+
       if (!result) {
         throw new Error('Failed to update contact in database');
       }
-      
+
       console.log('[CRMContacts] Contact updated successfully:', result);
       setIsEditModalOpen(false);
       setEditingContact(null);
@@ -133,25 +138,37 @@ export function CRMContacts() {
         <div className="p-4 border-b border-gray-200 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold font-[Lexend]">Contacts</h2>
-            <button 
+            <button
               onClick={() => setIsAddModalOpen(true)}
               className="px-4 py-2 bg-[#FF4F00] text-white rounded-lg hover:bg-[#e04500] transition-colors flex items-center gap-2"
             >
               <Plus size={18} /> Add Contact
             </button>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search contacts..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00]"
-            />
+          <div className="flex gap-4 items-center">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Search contacts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00]"
+              />
+            </div>
+            <select
+              value={filterPlatform}
+              onChange={(e) => setFilterPlatform(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00] bg-gray-50"
+            >
+              <option value="all">All Platforms</option>
+              {platforms.map(platform => (
+                <option key={platform.id} value={platform.id}>{platform.name}</option>
+              ))}
+            </select>
           </div>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
@@ -159,22 +176,25 @@ export function CRMContacts() {
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[160px]">
                   Name
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[140px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[120px]">
                   Business Name
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[130px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[110px]">
+                  Platform
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[120px]">
                   Phone Number
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[140px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[120px]">
                   Location
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[130px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[120px]">
                   Sales Person
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[180px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[150px]">
                   Pain Point
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[180px]">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[150px]">
                   Notes
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider w-20">
@@ -184,7 +204,7 @@ export function CRMContacts() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {filteredContacts.map(contact => (
-                <tr 
+                <tr
                   key={contact.id}
                   className="hover:bg-orange-50 transition-colors group"
                 >
@@ -193,6 +213,9 @@ export function CRMContacts() {
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-700 align-top">
                     {contact.company_name || contact.company?.name || 'No Company'}
+                  </td>
+                  <td className="px-4 py-4 text-sm text-gray-700 align-top">
+                    {contact.platform?.name || 'N/A'}
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-700 align-top">
                     {contact.phone || 'N/A'}
@@ -257,20 +280,20 @@ export function CRMContacts() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">First Name</label>
-                  <input 
+                  <input
                     required
                     value={newContact.first_name || ''}
-                    onChange={e => setNewContact({...newContact, first_name: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, first_name: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Last Name</label>
-                  <input 
+                  <input
                     required
                     value={newContact.last_name || ''}
-                    onChange={e => setNewContact({...newContact, last_name: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, last_name: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
               </div>
@@ -278,41 +301,41 @@ export function CRMContacts() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Company</label>
-                  <input 
+                  <input
                     value={newContact.company_name || ''}
-                    onChange={e => setNewContact({...newContact, company_name: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, company_name: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                     placeholder="e.g. Acme Corp"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Location</label>
-                  <input 
+                  <input
                     value={newContact.location || ''}
-                    onChange={e => setNewContact({...newContact, location: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, location: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                     placeholder="e.g. Nairobi, Kenya"
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Email</label>
-                  <input 
+                  <input
                     type="email"
                     value={newContact.email || ''}
-                    onChange={e => setNewContact({...newContact, email: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, email: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Phone</label>
-                  <input 
+                  <input
                     type="tel"
                     value={newContact.phone || ''}
-                    onChange={e => setNewContact({...newContact, phone: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
               </div>
@@ -320,17 +343,17 @@ export function CRMContacts() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Main Pain Point</label>
-                  <input 
+                  <input
                     value={newContact.main_need || ''}
-                    onChange={e => setNewContact({...newContact, main_need: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, main_need: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Authority</label>
-                  <select 
+                  <select
                     value={newContact.decision_authority || ''}
-                    onChange={e => setNewContact({...newContact, decision_authority: e.target.value})}
+                    onChange={e => setNewContact({ ...newContact, decision_authority: e.target.value })}
                     className="w-full p-2 border border-gray-200 rounded-lg"
                   >
                     <option value="">Select...</option>
@@ -342,21 +365,35 @@ export function CRMContacts() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Platform</label>
+                <select
+                  value={newContact.platform_id || ''}
+                  onChange={e => setNewContact({ ...newContact, platform_id: e.target.value || undefined })}
+                  className="w-full p-2 border border-gray-200 rounded-lg"
+                >
+                  <option value="">Select Platform...</option>
+                  {platforms.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Sales Person Name</label>
-                <input 
+                <input
                   value={newContact.sales_person_name || ''}
-                  onChange={e => setNewContact({...newContact, sales_person_name: e.target.value})}
-                  className="w-full p-2 border border-gray-200 rounded-lg" 
+                  onChange={e => setNewContact({ ...newContact, sales_person_name: e.target.value })}
+                  className="w-full p-2 border border-gray-200 rounded-lg"
                   placeholder="e.g. John Doe"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Initial Notes</label>
-                <textarea 
+                <textarea
                   value={newContact.notes || ''}
-                  onChange={e => setNewContact({...newContact, notes: e.target.value})}
-                  className="w-full p-2 border border-gray-200 rounded-lg" 
+                  onChange={e => setNewContact({ ...newContact, notes: e.target.value })}
+                  className="w-full p-2 border border-gray-200 rounded-lg"
                   rows={3}
                 />
               </div>
@@ -368,14 +405,14 @@ export function CRMContacts() {
               )}
 
               <div className="flex justify-end gap-3 mt-4">
-                <button 
+                <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="px-6 py-2 bg-[#FF4F00] text-white rounded-lg hover:bg-[#e04500]"
                   disabled={isSaving}
@@ -400,20 +437,20 @@ export function CRMContacts() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">First Name</label>
-                  <input 
+                  <input
                     required
                     value={newContact.first_name || ''}
-                    onChange={e => setNewContact({...newContact, first_name: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, first_name: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Last Name</label>
-                  <input 
+                  <input
                     required
                     value={newContact.last_name || ''}
-                    onChange={e => setNewContact({...newContact, last_name: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, last_name: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
               </div>
@@ -421,41 +458,41 @@ export function CRMContacts() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Company</label>
-                  <input 
+                  <input
                     value={newContact.company_name || ''}
-                    onChange={e => setNewContact({...newContact, company_name: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, company_name: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                     placeholder="e.g. Acme Corp"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Location</label>
-                  <input 
+                  <input
                     value={newContact.location || ''}
-                    onChange={e => setNewContact({...newContact, location: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, location: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                     placeholder="e.g. Nairobi, Kenya"
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Email</label>
-                  <input 
+                  <input
                     type="email"
                     value={newContact.email || ''}
-                    onChange={e => setNewContact({...newContact, email: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, email: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Phone</label>
-                  <input 
+                  <input
                     type="tel"
                     value={newContact.phone || ''}
-                    onChange={e => setNewContact({...newContact, phone: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
               </div>
@@ -463,17 +500,17 @@ export function CRMContacts() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Main Pain Point</label>
-                  <input 
+                  <input
                     value={newContact.main_need || ''}
-                    onChange={e => setNewContact({...newContact, main_need: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-lg" 
+                    onChange={e => setNewContact({ ...newContact, main_need: e.target.value })}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1">Authority</label>
-                  <select 
+                  <select
                     value={newContact.decision_authority || ''}
-                    onChange={e => setNewContact({...newContact, decision_authority: e.target.value})}
+                    onChange={e => setNewContact({ ...newContact, decision_authority: e.target.value })}
                     className="w-full p-2 border border-gray-200 rounded-lg"
                   >
                     <option value="">Select...</option>
@@ -485,21 +522,35 @@ export function CRMContacts() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Platform</label>
+                <select
+                  value={newContact.platform_id || ''}
+                  onChange={e => setNewContact({ ...newContact, platform_id: e.target.value || undefined })}
+                  className="w-full p-2 border border-gray-200 rounded-lg"
+                >
+                  <option value="">Select Platform...</option>
+                  {platforms.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Sales Person Name</label>
-                <input 
+                <input
                   value={newContact.sales_person_name || ''}
-                  onChange={e => setNewContact({...newContact, sales_person_name: e.target.value})}
-                  className="w-full p-2 border border-gray-200 rounded-lg" 
+                  onChange={e => setNewContact({ ...newContact, sales_person_name: e.target.value })}
+                  className="w-full p-2 border border-gray-200 rounded-lg"
                   placeholder="e.g. John Doe"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Initial Notes</label>
-                <textarea 
+                <textarea
                   value={newContact.notes || ''}
-                  onChange={e => setNewContact({...newContact, notes: e.target.value})}
-                  className="w-full p-2 border border-gray-200 rounded-lg" 
+                  onChange={e => setNewContact({ ...newContact, notes: e.target.value })}
+                  className="w-full p-2 border border-gray-200 rounded-lg"
                   rows={3}
                 />
               </div>
@@ -511,14 +562,14 @@ export function CRMContacts() {
               )}
 
               <div className="flex justify-end gap-3 mt-4">
-                <button 
+                <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="px-6 py-2 bg-[#FF4F00] text-white rounded-lg hover:bg-[#e04500]"
                   disabled={isSaving}

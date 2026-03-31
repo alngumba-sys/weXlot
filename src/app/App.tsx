@@ -23,6 +23,13 @@ export default function App() {
     fontsGstaticPreconnect.href = 'https://fonts.gstatic.com';
     fontsGstaticPreconnect.crossOrigin = 'anonymous';
     document.head.appendChild(fontsGstaticPreconnect);
+
+    // Cleanup: remove preconnect links on unmount to prevent duplicates
+    return () => {
+      preconnectLink.remove();
+      fontsPreconnect.remove();
+      fontsGstaticPreconnect.remove();
+    };
   }, []);
 
   return (

@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://mtfsrlsccbmrekzthvmw.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10ZnNybHNjY2JtcmVrenRodm13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5ODY4NDAsImV4cCI6MjA4MzU2Mjg0MH0.SdYC7G_lxFifJh8VLFpLjOZw5hPm_t0liv4xQJcHHGU';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mtfsrlsccbmrekzthvmw.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10ZnNybHNjY2JtcmVrenRodm13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5ODY4NDAsImV4cCI6MjA4MzU2Mjg0MH0.SdYC7G_lxFifJh8VLFpLjOZw5hPm_t0liv4xQJcHHGU';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -46,7 +46,7 @@ export async function uploadImage(file: File, imageKey: ImageKey): Promise<strin
 
     // Add timestamp to bust cache
     const urlWithCacheBuster = `${urlData.publicUrl}?t=${Date.now()}`;
-    
+
     console.log('Upload successful:', urlWithCacheBuster);
     return urlWithCacheBuster;
   } catch (error) {
@@ -82,7 +82,7 @@ export async function getImageUrl(imageKey: ImageKey): Promise<string | null> {
     // const urlWithCacheBuster = `${urlData.publicUrl}?t=${Date.now()}`;
     const urlWithCacheBuster = urlData.publicUrl;
     console.log('Image URL for', imageKey, ':', urlWithCacheBuster);
-    
+
     return urlWithCacheBuster;
   } catch (error) {
     console.error('Error getting image URL:', error);
@@ -108,12 +108,12 @@ export async function getAllImages(): Promise<Record<ImageKey, string | null>> {
 
     for (const [key, fileName] of Object.entries(IMAGE_KEYS)) {
       const file = allFiles?.find(f => f.name.startsWith(fileName));
-      
+
       if (file) {
         const { data: urlData } = supabase.storage
           .from('images')
           .getPublicUrl(`platform-images/${file.name}`);
-        
+
         images[key] = urlData.publicUrl;
       } else {
         images[key] = null;

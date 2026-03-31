@@ -6,7 +6,7 @@ import { Briefcase, DollarSign, TrendingUp, Users, Phone, Mail, Calendar } from 
 
 export function CRMDashboard() {
   console.log('[CRMDashboard] Component function called');
-  
+
   // Safely handle context - return null if not available (during hot reload)
   let crmContext;
   try {
@@ -23,33 +23,33 @@ export function CRMDashboard() {
       </div>
     );
   }
-  
+
   const { deals, interactions, staff, activities, loading, error } = crmContext;
-  
-  console.log('[CRMDashboard] Rendering with:', { 
-    dealsCount: deals?.length, 
-    staffCount: staff?.length, 
-    loading, 
-    error 
+
+  console.log('[CRMDashboard] Rendering with:', {
+    dealsCount: deals?.length,
+    staffCount: staff?.length,
+    loading,
+    error
   });
 
   const stats = useMemo(() => {
     const totalPipelineValue = deals.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
     const weightedForecast = deals.reduce((sum, deal) => sum + ((Number(deal.value) || 0) * (deal.probability / 100)), 0);
     const activeDeals = deals.filter(d => d.stage !== 'closed-won' && d.stage !== 'closed-lost').length;
-    
+
     // Activity by Rep - ensure unique entries with absolutely unique names
-    const uniqueStaff = staff.filter((rep, index, self) => 
+    const uniqueStaff = staff.filter((rep, index, self) =>
       index === self.findIndex(r => r.id === rep.id)
     );
-    
+
     const activityByRep = uniqueStaff.map((rep, index) => {
       const repActivities = activities.filter(a => a.owner_id === rep.id && a.completed).length;
       const dealValue = deals.filter(d => d.owner_id === rep.id).reduce((sum, d) => sum + Number(d.value), 0);
-      
+
       // Create a truly unique name by appending ID to prevent any duplicates
       const uniqueName = `${rep.name || 'Unknown'}_${rep.id || index}`;
-      
+
       return {
         id: rep.id || `rep-${index}`,
         name: rep.name || 'Unknown', // Display name without ID
@@ -62,7 +62,7 @@ export function CRMDashboard() {
     return { totalPipelineValue, weightedForecast, activeDeals, activityByRep };
   }, [deals, interactions, staff, activities]);
 
-  const recentInteractions = interactions.slice(0, 5);
+  const recentInteractions = (interactions || []).slice(0, 5);
 
   if (loading) {
     return (
@@ -89,7 +89,7 @@ export function CRMDashboard() {
   return (
     <div className="space-y-6 p-6 overflow-y-auto h-full bg-gray-50">
       <h2 className="text-2xl font-bold font-[Lexend] text-gray-800">Sales Dashboard</h2>
-      
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -164,11 +164,10 @@ export function CRMDashboard() {
             {recentInteractions.length > 0 ? (
               recentInteractions.map((interaction) => (
                 <div key={interaction.id} className="flex items-start gap-3 pb-3 border-b border-gray-50 last:border-0">
-                  <div className={`mt-1 p-1.5 rounded-full text-white ${
-                    interaction.type === 'call' ? 'bg-green-500' : 
-                    interaction.type === 'email' ? 'bg-blue-500' : 
-                    interaction.type === 'meeting' ? 'bg-purple-500' : 'bg-gray-500'
-                  }`}>
+                  <div className={`mt-1 p-1.5 rounded-full text-white ${interaction.type === 'call' ? 'bg-green-500' :
+                      interaction.type === 'email' ? 'bg-blue-500' :
+                        interaction.type === 'meeting' ? 'bg-purple-500' : 'bg-gray-500'
+                    }`}>
                     {interaction.type === 'call' && <Phone size={12} />}
                     {interaction.type === 'email' && <Mail size={12} />}
                     {interaction.type === 'meeting' && <Users size={12} />}

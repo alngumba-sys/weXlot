@@ -6,10 +6,11 @@ import { AlertTriangle, Plus, CheckCircle, Clock, Filter, Search, Trash2, Chevro
 
 export function CRMIncidents() {
   console.log('[CRMIncidents] Component function called');
-  
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | IncidentStatus>('all');
   const [filterSeverity, setFilterSeverity] = useState<'all' | IncidentSeverity>('all');
+  const [filterPlatform, setFilterPlatform] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -49,13 +50,14 @@ export function CRMIncidents() {
     return incidents.filter(incident => {
       const matchesStatus = filterStatus === 'all' || incident.status === filterStatus;
       const matchesSeverity = filterSeverity === 'all' || incident.severity === filterSeverity;
-      const matchesSearch = !searchQuery || 
+      const matchesPlatform = filterPlatform === 'all' || incident.platform_id === filterPlatform;
+      const matchesSearch = !searchQuery ||
         incident.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         incident.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      return matchesStatus && matchesSeverity && matchesSearch;
+
+      return matchesStatus && matchesSeverity && matchesPlatform && matchesSearch;
     });
-  }, [incidents, filterStatus, filterSeverity, searchQuery]);
+  }, [incidents, filterStatus, filterSeverity, filterPlatform, searchQuery]);
 
   const handleAddIncident = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +98,7 @@ export function CRMIncidents() {
 
   const handleToggleStatus = async (incident: Incident) => {
     const newStatus: IncidentStatus = incident.status === 'ongoing' ? 'resolved' : 'ongoing';
-    await updateIncident(incident.id, { 
+    await updateIncident(incident.id, {
       status: newStatus,
       resolved_at: newStatus === 'resolved' ? new Date().toISOString() : undefined
     });
@@ -137,7 +139,7 @@ export function CRMIncidents() {
   if (error) {
     // Check if it's an RLS error
     const isRLSError = error?.message?.includes('row-level security') || error?.code === '42501';
-    
+
     return (
       <div className="p-6 max-w-4xl mx-auto">
         {isRLSError ? (
@@ -166,7 +168,7 @@ export function CRMIncidents() {
               <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
                 ⚡ QUICK FIX (1 minute)
               </h3>
-              
+
               <div className="space-y-4">
                 <div className="bg-blue-700 rounded-lg p-4">
                   <div className="flex items-start gap-3">
@@ -175,9 +177,9 @@ export function CRMIncidents() {
                     </div>
                     <div>
                       <p className="font-semibold mb-2">Open Supabase Dashboard</p>
-                      <a 
-                        href="https://supabase.com/dashboard" 
-                        target="_blank" 
+                      <a
+                        href="https://supabase.com/dashboard"
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="inline-block bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-blue-50 transition-colors"
                       >
@@ -253,8 +255,8 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
 
             <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
               <p className="text-sm text-yellow-800">
-                📚 <strong>Alternative:</strong> See files <code className="bg-yellow-100 px-2 py-1 rounded">/QUICK_FIX.md</code>, 
-                <code className="bg-yellow-100 px-2 py-1 rounded ml-1">/DISABLE_RLS_NOW.sql</code>, or 
+                📚 <strong>Alternative:</strong> See files <code className="bg-yellow-100 px-2 py-1 rounded">/QUICK_FIX.md</code>,
+                <code className="bg-yellow-100 px-2 py-1 rounded ml-1">/DISABLE_RLS_NOW.sql</code>, or
                 <code className="bg-yellow-100 px-2 py-1 rounded ml-1">/RLS_ERROR_FIX.md</code> in your project folder for detailed instructions.
               </p>
             </div>
@@ -359,6 +361,17 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
               <option value="medium">Medium</option>
               <option value="low">Low</option>
             </select>
+
+            <select
+              value={filterPlatform}
+              onChange={(e) => setFilterPlatform(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4F00]"
+            >
+              <option value="all">All Platforms</option>
+              {platforms.map(platform => (
+                <option key={platform.id} value={platform.id}>{platform.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -392,16 +405,15 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
             ) : (
               filteredIncidents.flatMap((incident) => {
                 const rows = [
-                  <tr 
+                  <tr
                     key={incident.id}
                     onClick={() => setExpandedIncidentId(expandedIncidentId === incident.id ? null : incident.id)}
-                    className={`cursor-pointer transition-colors ${
-                      expandedIncidentId === incident.id ? 'bg-blue-50' : 'hover:bg-gray-50'
-                    }`}
+                    className={`cursor-pointer transition-colors ${expandedIncidentId === incident.id ? 'bg-blue-50' : 'hover:bg-gray-50'
+                      }`}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-start gap-2">
-                        <button 
+                        <button
                           className="flex-shrink-0 mt-1 text-gray-400 hover:text-gray-600"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -429,11 +441,10 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                        incident.status === 'resolved' 
-                          ? 'bg-green-100 text-green-700 border border-green-300' 
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      }`}>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${incident.status === 'resolved'
+                        ? 'bg-green-100 text-green-700 border border-green-300'
+                        : 'bg-gray-100 text-gray-700 border border-gray-300'
+                        }`}>
                         {incident.status === 'resolved' ? <CheckCircle size={12} /> : <Clock size={12} />}
                         {incident.status === 'resolved' ? 'Resolved' : 'Ongoing'}
                       </span>
@@ -457,11 +468,10 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
                             e.stopPropagation();
                             handleToggleStatus(incident);
                           }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            incident.status === 'ongoing'
-                              ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
-                              : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
-                          }`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${incident.status === 'ongoing'
+                            ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                            }`}
                         >
                           {incident.status === 'ongoing' ? 'Mark Resolved' : 'Reopen'}
                         </button>
@@ -531,11 +541,10 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
                               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
                                 Current Status
                               </label>
-                              <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold ${
-                                incident.status === 'resolved' 
-                                  ? 'bg-green-100 text-green-700 border border-green-300' 
-                                  : 'bg-gray-100 text-gray-700 border border-gray-300'
-                              }`}>
+                              <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold ${incident.status === 'resolved'
+                                ? 'bg-green-100 text-green-700 border border-green-300'
+                                : 'bg-gray-100 text-gray-700 border border-gray-300'
+                                }`}>
                                 {incident.status === 'resolved' ? <CheckCircle size={14} /> : <Clock size={14} />}
                                 {incident.status === 'resolved' ? 'Resolved' : 'Ongoing'}
                               </span>
@@ -555,7 +564,7 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
                                 Related Contact
                               </label>
                               <p className="text-gray-900">
-                                {incident.contact 
+                                {incident.contact
                                   ? `${incident.contact.first_name} ${incident.contact.last_name}${incident.contact.business_name ? ` (${incident.contact.business_name})` : ''}`
                                   : 'Not specified'
                                 }
@@ -611,11 +620,10 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
                           <div className="mt-6 pt-6 border-t border-gray-200 flex justify-end gap-3">
                             <button
                               onClick={() => handleToggleStatus(incident)}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                incident.status === 'ongoing'
-                                  ? 'bg-green-600 text-white hover:bg-green-700'
-                                  : 'bg-gray-600 text-white hover:bg-gray-700'
-                              }`}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${incident.status === 'ongoing'
+                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                : 'bg-gray-600 text-white hover:bg-gray-700'
+                                }`}
                             >
                               {incident.status === 'ongoing' ? '✓ Mark as Resolved' : '↺ Reopen Issue'}
                             </button>
@@ -646,11 +654,11 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div className="border-b border-gray-200 flex justify-between items-center px-6 py-4 flex-shrink-0">
               <h3 className="font-bold text-xl">Create New Issue</h3>
-              <button 
+              <button
                 onClick={() => {
                   setIsAddModalOpen(false);
                   setSaveError(null);
-                }} 
+                }}
                 className="text-gray-400 hover:text-gray-600 text-3xl leading-none"
               >
                 &times;
@@ -854,7 +862,7 @@ ALTER TABLE IF EXISTS interactions DISABLE ROW LEVEL SECURITY;`}
                     <p className="text-sm text-gray-500">This action cannot be undone</p>
                   </div>
                 </div>
-                
+
                 {incidentToDelete && (
                   <div className="bg-gray-50 p-4 rounded-lg mb-6">
                     <p className="text-sm font-semibold text-gray-900 mb-1">{incidentToDelete.title}</p>

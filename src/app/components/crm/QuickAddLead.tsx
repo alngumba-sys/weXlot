@@ -11,10 +11,10 @@ export function QuickAddLead() {
   } catch {
     return null;
   }
-  
+
   const { addContact, addDeal, staff, platforms } = crmContext;
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     username: '',
     clientName: '',
@@ -67,7 +67,7 @@ export function QuickAddLead() {
           await addDeal({
             title: `${firstName} ${lastName} - New Deal`,
             value: 0,
-            stage: 'lead',
+            stage: 'planned-visit',
             probability: 10,
             contact_id: contactResult.id,
             platform_id: formData.platformId,
@@ -112,14 +112,14 @@ export function QuickAddLead() {
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[200] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            
+
             {/* Header */}
             <div className="bg-[#FF4F00] px-6 py-4 flex justify-between items-center text-white">
               <div>
                 <h3 className="font-bold text-lg font-[Lexend]">Quick Access</h3>
                 <p className="text-orange-100 text-xs">Add a new lead instantly</p>
               </div>
-              <button 
+              <button
                 onClick={() => setIsOpen(false)}
                 className="hover:bg-white/20 p-1 rounded-full transition-colors"
               >
@@ -129,7 +129,7 @@ export function QuickAddLead() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              
+
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Username</label>
                 <div className="relative">
@@ -141,7 +141,7 @@ export function QuickAddLead() {
                     required
                     list="staff-list"
                     value={formData.username}
-                    onChange={e => setFormData({...formData, username: e.target.value})}
+                    onChange={e => setFormData({ ...formData, username: e.target.value })}
                     className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#FF4F00] focus:border-transparent outline-none transition-all"
                     placeholder="Enter your username"
                   />
@@ -164,12 +164,12 @@ export function QuickAddLead() {
                       type="text"
                       required
                       value={formData.clientName}
-                      onChange={e => setFormData({...formData, clientName: e.target.value})}
+                      onChange={e => setFormData({ ...formData, clientName: e.target.value })}
                       className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#FF4F00] focus:border-transparent outline-none transition-all"
                       placeholder="Client Name"
                     />
                   </div>
-                  
+
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                       <Phone size={16} />
@@ -177,7 +177,7 @@ export function QuickAddLead() {
                     <input
                       type="tel"
                       value={formData.clientPhone}
-                      onChange={e => setFormData({...formData, clientPhone: e.target.value})}
+                      onChange={e => setFormData({ ...formData, clientPhone: e.target.value })}
                       className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#FF4F00] focus:border-transparent outline-none transition-all"
                       placeholder="Phone Number"
                     />
@@ -190,7 +190,7 @@ export function QuickAddLead() {
                     <input
                       type="text"
                       value={formData.clientLocation}
-                      onChange={e => setFormData({...formData, clientLocation: e.target.value})}
+                      onChange={e => setFormData({ ...formData, clientLocation: e.target.value })}
                       className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#FF4F00] focus:border-transparent outline-none transition-all"
                       placeholder="Location (e.g. Westlands)"
                     />
@@ -202,7 +202,7 @@ export function QuickAddLead() {
                     </div>
                     <select
                       value={formData.platformId}
-                      onChange={e => setFormData({...formData, platformId: e.target.value})}
+                      onChange={e => setFormData({ ...formData, platformId: e.target.value })}
                       className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#FF4F00] focus:border-transparent outline-none transition-all appearance-none text-gray-600"
                     >
                       <option value="">Select Platform...</option>
@@ -226,7 +226,7 @@ export function QuickAddLead() {
                   <textarea
                     rows={3}
                     value={formData.notes}
-                    onChange={e => setFormData({...formData, notes: e.target.value})}
+                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
                     className="w-full pl-10 p-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#FF4F00] focus:border-transparent outline-none transition-all resize-none"
                     placeholder="Enter any initial details..."
                   />
