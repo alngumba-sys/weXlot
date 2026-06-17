@@ -1,3 +1,6 @@
 [build]
   publish = "."
-  command = "echo 'static site, no build'"
+  command = ""
+
+[build.environment]
+  NODE_VERSION = "18"
